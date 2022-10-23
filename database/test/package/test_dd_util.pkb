@@ -9,14 +9,14 @@ create or replace package body test_dd_util is
    procedure setup is
    begin
       wrap_dyn_exec(q'[
-         create or replace procedure p1 is
+         create procedure p1 is
          begin
             null;
          end;
       ]');
 
       wrap_dyn_exec(q'[
-         create or replace view sample_vw1 as
+         create view sample_vw1 as
             with
                cte(n, m2, m3) as (
                   select level, mod(level, 2), mod(level, 3) from dual connect by level <= 10
@@ -31,23 +31,26 @@ create or replace package body test_dd_util is
                    )
       ]');
 
-      wrap_dyn_exec('create or replace synonym s1 for p1');
-      wrap_dyn_exec('create or replace synonym s2 for s1');
-      wrap_dyn_exec('create or replace synonym s3 for s2');
+      wrap_dyn_exec('create synonym s1 for p1');
+      wrap_dyn_exec('create synonym s2 for s1');
+      wrap_dyn_exec('create synonym s3 for s2');
       
       wrap_dyn_exec('create public synonym weird_test_pubsyn1 for s3');
-      wrap_dyn_exec('create public synonym weird_test_pubsyn2 for '
-         || sys_context('USERENV', 'CURRENT_SCHEMA') || '.weird_test_pubsyn1');
-      wrap_dyn_exec('create public synonym weird_test_pubsyn3 for '
-         || sys_context('USERENV', 'CURRENT_SCHEMA') || '.weird_test_pubsyn2');
+      wrap_dyn_exec('create synonym weird_test_pubsyn1 for "PUBLIC".weird_test_pubsyn1');
+      wrap_dyn_exec('create public synonym weird_test_pubsyn2 for weird_test_pubsyn1');
+      wrap_dyn_exec('create synonym weird_test_pubsyn2 for "PUBLIC".weird_test_pubsyn2');
+      wrap_dyn_exec('create public synonym weird_test_pubsyn3 for weird_test_pubsyn2');
+      wrap_dyn_exec('drop synonym weird_test_pubsyn2');  -- this invalidates "PUBLIC".weird_test_pubsyn3
+      wrap_dyn_exec('drop synonym weird_test_pubsyn1');  -- this invalidates "PUBLIC".weird_test_pubsyn2
+      wrap_dyn_exec('alter public synonym weird_test_pubsyn3 compile');  -- so let's revalidate both
 
-      wrap_dyn_exec('create or replace synonym syn_loop1 for p1');
-      wrap_dyn_exec('create or replace synonym syn_loop2 for syn_loop1');
-      wrap_dyn_exec('create or replace synonym syn_loop3 for syn_loop2');
+      wrap_dyn_exec('create synonym syn_loop1 for p1');
+      wrap_dyn_exec('create synonym syn_loop2 for syn_loop1');
+      wrap_dyn_exec('create synonym syn_loop3 for syn_loop2');
       wrap_dyn_exec('create or replace synonym syn_loop1 for syn_loop3');
       
       wrap_dyn_exec('create table to_be_dropped_t1 (c1 number)');
-      wrap_dyn_exec('create or replace synonym syn_nonexistent for to_be_dropped_t1');
+      wrap_dyn_exec('create synonym syn_nonexistent for to_be_dropped_t1');
       wrap_dyn_exec('drop table to_be_dropped_t1 purge');
 
       -- issue 31: fix ORA-6550 that occurs from time to time while querying dba_synonyms
@@ -59,17 +62,17 @@ create or replace package body test_dd_util is
    --
    procedure teardown is
    begin
-      wrap_dyn_exec('drop view sample_vw1');
       wrap_dyn_exec('drop synonym syn_nonexistent');
       wrap_dyn_exec('drop synonym syn_loop3');
       wrap_dyn_exec('drop synonym syn_loop2');
       wrap_dyn_exec('drop synonym syn_loop1');
-      wrap_dyn_exec('drop synonym s3');
-      wrap_dyn_exec('drop synonym s2');
-      wrap_dyn_exec('drop synonym s1');
       wrap_dyn_exec('drop public synonym weird_test_pubsyn3');
       wrap_dyn_exec('drop public synonym weird_test_pubsyn2');
       wrap_dyn_exec('drop public synonym weird_test_pubsyn1');
+      wrap_dyn_exec('drop synonym s3');
+      wrap_dyn_exec('drop synonym s2');
+      wrap_dyn_exec('drop synonym s1');
+      wrap_dyn_exec('drop view sample_vw1');
       wrap_dyn_exec('drop procedure p1');
    end teardown;
 
