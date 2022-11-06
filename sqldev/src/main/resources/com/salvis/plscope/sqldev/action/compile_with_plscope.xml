@@ -209,7 +209,11 @@ select 'Yes' as val
 			<value><![CDATA[STATIC:Off:On - Summary only:On - Failed statements:On - All details]]>
 			</value>
 		</prompt>
-		<prompt type="confirm">                             <!-- index: 7 -->
+		<prompt type="radio">                               <!-- index: 7 -->
+			<label>Unexpected error handling</label>
+			<value><![CDATA[STATIC:Continue:Raise]]></value>
+		</prompt>
+		<prompt type="confirm">                             <!-- index: 8 -->
 			<label>Confirm actions for target schema: #"OBJECT_OWNER"# ?</label>
 		</prompt>
 		<sql>
@@ -238,6 +242,9 @@ select 'Yes' as val
    co_log_ind_step constant pls_integer := 3;    /* Log indentation step */
    g_log_ind_level pls_integer := 0;             /* Log indentation level */
 
+   /* What to do if a compile statement fails unexpectedly */
+   g_is_on_error_raise boolean;  /* true => raise, false => continue */
+
    /* Forward decl. */
    procedure assert_not_oracle_maintained (in_schema_name in varchar2);
    procedure set_plscope_settings (in_identifiers in varchar2, in_statements in varchar2);
@@ -247,6 +254,7 @@ select 'Yes' as val
    procedure recomp_session_settings (in_schema_name in varchar2);
    procedure recomp_reuse_settings (in_schema_name in varchar2, 
          in_identifiers in varchar2, in_statements in varchar2);
+   procedure set_on_error_raise(in_is_on_error_raise in boolean);
    procedure exec_dyn_stmt(in_stmt in varchar2, in_expected_errors in t_oerrns_type);
    procedure log_init (in_level in pls_integer);
    procedure log_start (in_step_name in varchar2);
@@ -254,7 +262,7 @@ select 'Yes' as val
    procedure log_summary (in_step_name in varchar2 default null);
    procedure log (in_msg in varchar2, in_level in pls_integer default co_log_level_summary);
    procedure log_stmt (in_sqlcode in pls_integer, in_stmt in varchar2,
-         in_status in varchar2 default null);
+         in_errmsg in varchar2 default null, in_status in varchar2 default null);
 
    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
    /* Main procedure; all placeholder substitutions are done here. */
@@ -292,9 +300,15 @@ select 'Yes' as val
                                     when 'On - All details' then
                                        co_log_level_everything
                                  end;
+      
+      /* What shall we do if a compile statement raises an unanticipated exception? */
+      l_is_on_error_raise boolean := ('Raise' = '#7#');
+
    begin
       /* Sanity check: this action is not for Oracle-maintained accounts. */
       assert_not_oracle_maintained( q'#"OBJECT_OWNER"#' );
+
+      set_on_error_raise(l_is_on_error_raise);
 
       log_init(l_log_level);
       log_start('Compile with PL/Scope');
@@ -889,6 +903,12 @@ select 'Yes' as val
       log_end('Compile schema (reuse settings)');
    end recomp_reuse_settings;
 
+   procedure set_on_error_raise(in_is_on_error_raise in boolean)
+   is
+   begin
+      g_is_on_error_raise := in_is_on_error_raise;
+   end set_on_error_raise;
+
    procedure exec_dyn_stmt(
       in_stmt              in varchar2,
       in_expected_errors   in t_oerrns_type
@@ -896,18 +916,36 @@ select 'Yes' as val
    is
       l_sqlcode pls_integer;
    begin
+      <<stmt_dyn_exec>>
       begin
          execute immediate in_stmt;
          l_sqlcode := 0;
       exception
          when others then
-            l_sqlcode := sqlcode;
-            if not l_sqlcode member of in_expected_errors then
-               log_stmt(l_sqlcode, in_stmt, in_status => 'UNEXPECTED ERROR');
-               raise;
-            end if;
-      end;
-      log_stmt(l_sqlcode, in_stmt);
+            <<stmt_failure_handler>>
+            declare
+               l_is_expected_error boolean;
+            begin
+               l_sqlcode := sqlcode;
+               l_is_expected_error := (in_expected_errors is not null
+                                         and l_sqlcode member of in_expected_errors);
+               log_stmt(
+                  in_sqlcode => l_sqlcode, 
+                  in_stmt    => in_stmt, 
+                  in_errmsg  => sqlerrm,
+                  in_status  => case 
+                                   when not l_is_expected_error then
+                                      'UNEXPECTED ERROR'
+                                end
+               );
+               if g_is_on_error_raise and not l_is_expected_error then
+                  raise;
+               end if;
+            end stmt_failure_handler;
+      end stmt_dyn_exec;
+      if l_sqlcode = 0 then
+         log_stmt(l_sqlcode, in_stmt);
+      end if;
    end exec_dyn_stmt;
 
    procedure log_init (in_level in pls_integer)
@@ -954,6 +992,7 @@ select 'Yes' as val
    procedure log_stmt(
       in_sqlcode  in pls_integer, 
       in_stmt     in varchar2,
+      in_errmsg   in varchar2 default null,
       in_status   in varchar2 default null
    )
    is
@@ -966,10 +1005,15 @@ select 'Yes' as val
       if in_sqlcode = 0 then
          log('SUCCESS: ' || in_stmt, co_log_level_everything);
       elsif in_status is not null then
-         log(in_status || ' (ORA' || to_char(in_sqlcode, 'S00000') || '): ' || in_stmt);
+         log(in_status || ': ' || in_stmt);
+         if in_errmsg is not null then
+            log(rpad(' ', co_log_ind_step) || in_errmsg);
+         end if;
       else
-         log('FAILED (ORA' || to_char(in_sqlcode, 'S00000') || '): ' || in_stmt,
-            co_log_level_failed_stmt);
+         log('FAILED: ' || in_stmt, co_log_level_failed_stmt);
+         if in_errmsg is not null then
+            log(rpad(' ', co_log_ind_step) || in_errmsg, co_log_level_failed_stmt);
+         end if;
       end if;
    end log_stmt;
 
@@ -1246,7 +1290,11 @@ select 'Yes' as val
 			<value><![CDATA[STATIC:Off:On - Summary only:On - Failed statements:On - All details]]>
 			</value>
 		</prompt>
-		<prompt type="confirm">                             <!-- index: 7 -->
+		<prompt type="radio">                               <!-- index: 7 -->
+			<label>Unexpected error handling</label>
+			<value><![CDATA[STATIC:Continue:Raise]]></value>
+		</prompt>
+		<prompt type="confirm">                             <!-- index: 8 -->
 			<label>Confirm actions for target schema: #"OBJECT_OWNER"# ?</label>
 		</prompt>
 		<sql>
@@ -1275,6 +1323,9 @@ select 'Yes' as val
    co_log_ind_step constant pls_integer := 3;    /* Log indentation step */
    g_log_ind_level pls_integer := 0;             /* Log indentation level */
 
+   /* What to do if a compile statement fails unexpectedly */
+   g_is_on_error_raise boolean;  /* true => raise, false => continue */
+
    /* Forward decl. */
    procedure assert_not_oracle_maintained (in_schema_name in varchar2);
    procedure set_plscope_settings (in_identifiers in varchar2, in_statements in varchar2);
@@ -1284,6 +1335,7 @@ select 'Yes' as val
    procedure recomp_session_settings (in_schema_name in varchar2);
    procedure recomp_reuse_settings (in_schema_name in varchar2, 
          in_identifiers in varchar2, in_statements in varchar2);
+   procedure set_on_error_raise(in_is_on_error_raise in boolean);
    procedure exec_dyn_stmt(in_stmt in varchar2, in_expected_errors in t_oerrns_type);
    procedure log_init (in_level in pls_integer);
    procedure log_start (in_step_name in varchar2);
@@ -1291,7 +1343,7 @@ select 'Yes' as val
    procedure log_summary (in_step_name in varchar2 default null);
    procedure log (in_msg in varchar2, in_level in pls_integer default co_log_level_summary);
    procedure log_stmt (in_sqlcode in pls_integer, in_stmt in varchar2,
-         in_status in varchar2 default null);
+         in_errmsg in varchar2 default null, in_status in varchar2 default null);
 
    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
    /* Main procedure; all placeholder substitutions are done here. */
@@ -1329,9 +1381,15 @@ select 'Yes' as val
                                     when 'On - All details' then
                                        co_log_level_everything
                                  end;
+      
+      /* What shall we do if a compile statement raises an unanticipated exception? */
+      l_is_on_error_raise boolean := ('Raise' = '#7#');
+
    begin
       /* Sanity check: this action is not for Oracle-maintained accounts. */
       assert_not_oracle_maintained( q'#"OBJECT_OWNER"#' );
+
+      set_on_error_raise(l_is_on_error_raise);
 
       log_init(l_log_level);
       log_start('Compile with PL/Scope');
@@ -1926,6 +1984,12 @@ select 'Yes' as val
       log_end('Compile schema (reuse settings)');
    end recomp_reuse_settings;
 
+   procedure set_on_error_raise(in_is_on_error_raise in boolean)
+   is
+   begin
+      g_is_on_error_raise := in_is_on_error_raise;
+   end set_on_error_raise;
+
    procedure exec_dyn_stmt(
       in_stmt              in varchar2,
       in_expected_errors   in t_oerrns_type
@@ -1933,18 +1997,36 @@ select 'Yes' as val
    is
       l_sqlcode pls_integer;
    begin
+      <<stmt_dyn_exec>>
       begin
          execute immediate in_stmt;
          l_sqlcode := 0;
       exception
          when others then
-            l_sqlcode := sqlcode;
-            if not l_sqlcode member of in_expected_errors then
-               log_stmt(l_sqlcode, in_stmt, in_status => 'UNEXPECTED ERROR');
-               raise;
-            end if;
-      end;
-      log_stmt(l_sqlcode, in_stmt);
+            <<stmt_failure_handler>>
+            declare
+               l_is_expected_error boolean;
+            begin
+               l_sqlcode := sqlcode;
+               l_is_expected_error := (in_expected_errors is not null
+                                         and l_sqlcode member of in_expected_errors);
+               log_stmt(
+                  in_sqlcode => l_sqlcode, 
+                  in_stmt    => in_stmt, 
+                  in_errmsg  => sqlerrm,
+                  in_status  => case 
+                                   when not l_is_expected_error then
+                                      'UNEXPECTED ERROR'
+                                end
+               );
+               if g_is_on_error_raise and not l_is_expected_error then
+                  raise;
+               end if;
+            end stmt_failure_handler;
+      end stmt_dyn_exec;
+      if l_sqlcode = 0 then
+         log_stmt(l_sqlcode, in_stmt);
+      end if;
    end exec_dyn_stmt;
 
    procedure log_init (in_level in pls_integer)
@@ -1991,6 +2073,7 @@ select 'Yes' as val
    procedure log_stmt(
       in_sqlcode  in pls_integer, 
       in_stmt     in varchar2,
+      in_errmsg   in varchar2 default null,
       in_status   in varchar2 default null
    )
    is
@@ -2003,10 +2086,15 @@ select 'Yes' as val
       if in_sqlcode = 0 then
          log('SUCCESS: ' || in_stmt, co_log_level_everything);
       elsif in_status is not null then
-         log(in_status || ' (ORA' || to_char(in_sqlcode, 'S00000') || '): ' || in_stmt);
+         log(in_status || ': ' || in_stmt);
+         if in_errmsg is not null then
+            log(rpad(' ', co_log_ind_step) || in_errmsg);
+         end if;
       else
-         log('FAILED (ORA' || to_char(in_sqlcode, 'S00000') || '): ' || in_stmt,
-            co_log_level_failed_stmt);
+         log('FAILED: ' || in_stmt, co_log_level_failed_stmt);
+         if in_errmsg is not null then
+            log(rpad(' ', co_log_ind_step) || in_errmsg, co_log_level_failed_stmt);
+         end if;
       end if;
    end log_stmt;
 
