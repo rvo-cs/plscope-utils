@@ -17,10 +17,10 @@ Recompiling PL/SQL code (and/or synonyms) may have cascading side effects, e.g.:
 . discarding the state of packages, causing ORA-04068 exceptions
 Make sure you know what you are doing.
 
-Note that this action is purposely disabled for SYS, SYSTEM, and other Oracle-maintained accounts.
+Note: this action is purposely disabled for SYS, SYSTEM, and other Oracle-maintained accounts.
 
 Tip: if the Log to DBMS_OUTPUT option is On, don't forget to make a database call from a SQL worksheet,
-e.g. exec null; after running this action in order to have SQL Developer read from the output buffer.]]>
+e.g. exec null; after running this action, in order to have SQL Developer read from the output buffer.]]>
         </help>
         <prompt required="true">                            <!-- index: 0 -->
             <label>Use DBA or ALL views?</label>
@@ -104,27 +104,39 @@ e.g. exec null; after running this action in order to have SQL Developer read fr
                 'Yes, reuse settings' as val
            from dual
           union all
-         select 2 as pri,
-                'Yes, use session settings'
-                || case
-                      when :0 is not null and count(*) > 1 then
-                         '  !!! WARNING !!!'
-                   end as val
-           from ( select plsql_optimize_level,
-                         plsql_code_type,
-                         plsql_debug,
-                         plsql_warnings,
-                         nls_length_semantics
-                    from #0#_plsql_object_settings
-                   where owner = q'#"OBJECT_OWNER"#'
-                   group by plsql_optimize_level,
-                         plsql_code_type,
-                         plsql_debug,
-                         plsql_warnings,
-                         nls_length_semantics
-                )
+         select mnu.pri,
+                mnu.val || case
+                              when chk.cnt_grp > 1 then
+                                 '  !!! WARNING !!!'
+                           end as val
+           from ( select 2 as pri,
+                         'Yes, use session settings' as val
+                    from dual
+                   union all
+                  select 3 as pri,
+                         'Yes, use session settings [legacy impl.]' as val
+                    from dual
+                ) mnu,
+                ( select case
+                            when :0 is not null then
+                               count(*)
+                         end as cnt_grp
+                    from ( select plsql_optimize_level,
+                                  plsql_code_type,
+                                  plsql_debug,
+                                  plsql_warnings,
+                                  nls_length_semantics
+                             from #0#_plsql_object_settings
+                            where owner = q'#"OBJECT_OWNER"#'
+                            group by plsql_optimize_level,
+                                  plsql_code_type,
+                                  plsql_debug,
+                                  plsql_warnings,
+                                  nls_length_semantics
+                         )
+                ) chk
           union all
-         select 3 as pri,
+         select 4 as pri,
                 'No' as val
            from dual
        )
@@ -143,7 +155,7 @@ e.g. exec null; after running this action in order to have SQL Developer read fr
           'SYSTEM'       , 'WK_TEST'          , 'WKPROXY',
           'WKSYS'        , 'WMSYS'            , 'XDB'
        )
-       or pri >= 3
+       or pri >= 4
  order by pri asc
 ]]>
 			</value>
@@ -245,16 +257,21 @@ select 'Yes' as val
    /* What to do if a compile statement fails unexpectedly */
    g_is_on_error_raise boolean;  /* true => raise, false => continue */
 
+   /* Shall we reuse prior settings when recompiling, or apply session settings? */
+   g_is_reuse_settings boolean;  /* true => reuse prior settings, 
+                                    false => apply session settings */
+
    /* Forward decl. */
    procedure assert_not_oracle_maintained (in_schema_name in varchar2);
    procedure set_plscope_settings (in_identifiers in varchar2, in_statements in varchar2);
    procedure assert_schema_has_no_ccflags (in_schema_name in varchar2);
    procedure compile_public_synonyms (in_schema_name in varchar2);
    procedure compile_private_synonyms (in_schema_name in varchar2);
-   procedure recomp_session_settings (in_schema_name in varchar2);
-   procedure recomp_reuse_settings (in_schema_name in varchar2, 
+   procedure recomp_legacy_impl (in_schema_name in varchar2);
+   procedure recomp_impl (in_schema_name in varchar2, 
          in_identifiers in varchar2, in_statements in varchar2);
    procedure set_on_error_raise(in_is_on_error_raise in boolean);
+   procedure set_reuse_settings(in_is_reuse_settings in boolean);
    procedure exec_dyn_stmt(in_stmt in varchar2, in_expected_errors in t_oerrns_type);
    procedure log_init (in_level in pls_integer);
    procedure log_start (in_step_name in varchar2);
@@ -276,19 +293,25 @@ select 'Yes' as val
 
       /* Shall we compile private synonyms? */
       l_is_compile_priv_syn boolean := ('Yes' = '#5#');
-      
+
       /* Shall we compile code? */
       l_is_compile_code boolean := ('Yes' = substr(
             '#3#', 
             1, 3
          ));
-         
+
       /* And if so, shall we reuse settings, or apply session settings? */
       l_is_reuse_settings boolean := (regexp_like(
             '#3#',
             '^Yes.*reuse settings'
          ));
-         
+
+      /* And shall we use the legacy impl. for recompiling? */
+      l_is_use_legacy_impl boolean := (regexp_like(
+            '#3#',
+            '^Yes.*legacy impl\.'
+         ));
+
       /* Shall we send feedback to the dbms_output buffer? */
       l_log_level pls_integer := case '#6#'
                                     when 'Off' then
@@ -300,7 +323,7 @@ select 'Yes' as val
                                     when 'On - All details' then
                                        co_log_level_everything
                                  end;
-      
+
       /* What shall we do if a compile statement raises an unanticipated exception? */
       l_is_on_error_raise boolean := ('Raise' = '#7#');
 
@@ -309,6 +332,7 @@ select 'Yes' as val
       assert_not_oracle_maintained( q'#"OBJECT_OWNER"#' );
 
       set_on_error_raise(l_is_on_error_raise);
+      set_reuse_settings(l_is_reuse_settings);
 
       log_init(l_log_level);
       log_start('Compile with PL/Scope');
@@ -339,12 +363,12 @@ select 'Yes' as val
    
       /* Compile code */
       if l_is_compile_code then
-         if l_is_reuse_settings then
-            recomp_reuse_settings( in_schema_name => q'#"OBJECT_OWNER"#'
-                                 , in_identifiers => '#1#'
-                                 , in_statements  => '#2#' );
+         if l_is_use_legacy_impl then
+            recomp_legacy_impl( q'#"OBJECT_OWNER"#' );
          else
-            recomp_session_settings( q'#"OBJECT_OWNER"#' );
+            recomp_impl( in_schema_name => q'#"OBJECT_OWNER"#'
+                       , in_identifiers => '#1#'
+                       , in_statements  => '#2#' );
          end if;
       end if;
       
@@ -501,10 +525,10 @@ select 'Yes' as val
       log_end('Compile private synonyms');
    end compile_private_synonyms;
 
-   procedure recomp_session_settings (in_schema_name in varchar2)
+   procedure recomp_legacy_impl (in_schema_name in varchar2)
    is
    begin
-      log_start('Compile schema, using session settings');
+      log_start('Compile schema, legacy implementation (using session settings)');
       
       /* Compile types */
       <<types>>
@@ -551,10 +575,10 @@ select 'Yes' as val
       );
       log_summary('dbms_utility.compile_schema');
 
-      log_end('Compile schema, using session settings');
-   end recomp_session_settings;
+      log_end('Compile schema, legacy implementation (using session settings)');
+   end recomp_legacy_impl;
 
-   procedure recomp_reuse_settings (
+   procedure recomp_impl (
       in_schema_name  in varchar2,
       in_identifiers  in varchar2,
       in_statements   in varchar2
@@ -821,7 +845,8 @@ select 'Yes' as val
       end process_synonym;
   
    begin
-      log_start('Compile schema (reuse settings)');
+      log_start('Compile schema (' || case when g_is_reuse_settings then
+            'reuse settings' else 'using session settings' end || ')');
 
       open c_dep_ordered_schem_objs(in_schema_name);
       fetch c_dep_ordered_schem_objs bulk collect into l_schem_objs;
@@ -874,8 +899,9 @@ select 'Yes' as val
                            ' body'
                      end
                   || case 
-                        when l_schem_objs(i).type not in ( 'VIEW',
-                           'MATERIALIZED VIEW', 'OPERATOR' ) 
+                        when g_is_reuse_settings 
+                           and l_schem_objs(i).type not in ( 'VIEW',
+                                  'MATERIALIZED VIEW', 'OPERATOR' ) 
                         then
                            compile_settings( 
                               in_plsql_optimize_level  => l_schem_objs(i).plsql_optimize_level,
@@ -900,14 +926,21 @@ select 'Yes' as val
       end if;
 
       log_summary;      
-      log_end('Compile schema (reuse settings)');
-   end recomp_reuse_settings;
+      log_end('Compile schema (' || case when g_is_reuse_settings then
+            'reuse settings' else 'using session settings' end || ')');
+   end recomp_impl;
 
    procedure set_on_error_raise(in_is_on_error_raise in boolean)
    is
    begin
       g_is_on_error_raise := in_is_on_error_raise;
    end set_on_error_raise;
+
+   procedure set_reuse_settings(in_is_reuse_settings in boolean)
+   is
+   begin
+      g_is_reuse_settings := in_is_reuse_settings;
+   end set_reuse_settings;
 
    procedure exec_dyn_stmt(
       in_stmt              in varchar2,
@@ -1098,10 +1131,10 @@ Recompiling PL/SQL code (and/or synonyms) may have cascading side effects, e.g.:
 . discarding the state of packages, causing ORA-04068 exceptions
 Make sure you know what you are doing.
 
-Note that this action is purposely disabled for SYS, SYSTEM, and other Oracle-maintained accounts.
+Note: this action is purposely disabled for SYS, SYSTEM, and other Oracle-maintained accounts.
 
 Tip: if the Log to DBMS_OUTPUT option is On, don't forget to make a database call from a SQL worksheet,
-e.g. exec null; after running this action in order to have SQL Developer read from the output buffer.]]>
+e.g. exec null; after running this action, in order to have SQL Developer read from the output buffer.]]>
         </help>
         <prompt required="true">                            <!-- index: 0 -->
             <label>Use DBA or ALL views?</label>
@@ -1185,27 +1218,39 @@ e.g. exec null; after running this action in order to have SQL Developer read fr
                 'Yes, reuse settings' as val
            from dual
           union all
-         select 2 as pri,
-                'Yes, use session settings'
-                || case
-                      when :0 is not null and count(*) > 1 then
-                         '  !!! WARNING !!!'
-                   end as val
-           from ( select plsql_optimize_level,
-                         plsql_code_type,
-                         plsql_debug,
-                         plsql_warnings,
-                         nls_length_semantics
-                    from #0#_plsql_object_settings
-                   where owner = q'#"OBJECT_OWNER"#'
-                   group by plsql_optimize_level,
-                         plsql_code_type,
-                         plsql_debug,
-                         plsql_warnings,
-                         nls_length_semantics
-                )
+         select mnu.pri,
+                mnu.val || case
+                              when chk.cnt_grp > 1 then
+                                 '  !!! WARNING !!!'
+                           end as val
+           from ( select 2 as pri,
+                         'Yes, use session settings' as val
+                    from dual
+                   union all
+                  select 3 as pri,
+                         'Yes, use session settings [legacy impl.]' as val
+                    from dual
+                ) mnu,
+                ( select case
+                            when :0 is not null then
+                               count(*)
+                         end as cnt_grp
+                    from ( select plsql_optimize_level,
+                                  plsql_code_type,
+                                  plsql_debug,
+                                  plsql_warnings,
+                                  nls_length_semantics
+                             from #0#_plsql_object_settings
+                            where owner = q'#"OBJECT_OWNER"#'
+                            group by plsql_optimize_level,
+                                  plsql_code_type,
+                                  plsql_debug,
+                                  plsql_warnings,
+                                  nls_length_semantics
+                         )
+                ) chk
           union all
-         select 3 as pri,
+         select 4 as pri,
                 'No' as val
            from dual
        )
@@ -1224,7 +1269,7 @@ e.g. exec null; after running this action in order to have SQL Developer read fr
           'SYSTEM'       , 'WK_TEST'          , 'WKPROXY',
           'WKSYS'        , 'WMSYS'            , 'XDB'
        )
-       or pri >= 3
+       or pri >= 4
  order by pri asc
 ]]>
 			</value>
@@ -1326,16 +1371,21 @@ select 'Yes' as val
    /* What to do if a compile statement fails unexpectedly */
    g_is_on_error_raise boolean;  /* true => raise, false => continue */
 
+   /* Shall we reuse prior settings when recompiling, or apply session settings? */
+   g_is_reuse_settings boolean;  /* true => reuse prior settings, 
+                                    false => apply session settings */
+
    /* Forward decl. */
    procedure assert_not_oracle_maintained (in_schema_name in varchar2);
    procedure set_plscope_settings (in_identifiers in varchar2, in_statements in varchar2);
    procedure assert_schema_has_no_ccflags (in_schema_name in varchar2);
    procedure compile_public_synonyms (in_schema_name in varchar2);
    procedure compile_private_synonyms (in_schema_name in varchar2);
-   procedure recomp_session_settings (in_schema_name in varchar2);
-   procedure recomp_reuse_settings (in_schema_name in varchar2, 
+   procedure recomp_legacy_impl (in_schema_name in varchar2);
+   procedure recomp_impl (in_schema_name in varchar2, 
          in_identifiers in varchar2, in_statements in varchar2);
    procedure set_on_error_raise(in_is_on_error_raise in boolean);
+   procedure set_reuse_settings(in_is_reuse_settings in boolean);
    procedure exec_dyn_stmt(in_stmt in varchar2, in_expected_errors in t_oerrns_type);
    procedure log_init (in_level in pls_integer);
    procedure log_start (in_step_name in varchar2);
@@ -1357,19 +1407,25 @@ select 'Yes' as val
 
       /* Shall we compile private synonyms? */
       l_is_compile_priv_syn boolean := ('Yes' = '#5#');
-      
+
       /* Shall we compile code? */
       l_is_compile_code boolean := ('Yes' = substr(
             '#3#', 
             1, 3
          ));
-         
+
       /* And if so, shall we reuse settings, or apply session settings? */
       l_is_reuse_settings boolean := (regexp_like(
             '#3#',
             '^Yes.*reuse settings'
          ));
-         
+
+      /* And shall we use the legacy impl. for recompiling? */
+      l_is_use_legacy_impl boolean := (regexp_like(
+            '#3#',
+            '^Yes.*legacy impl\.'
+         ));
+
       /* Shall we send feedback to the dbms_output buffer? */
       l_log_level pls_integer := case '#6#'
                                     when 'Off' then
@@ -1381,7 +1437,7 @@ select 'Yes' as val
                                     when 'On - All details' then
                                        co_log_level_everything
                                  end;
-      
+
       /* What shall we do if a compile statement raises an unanticipated exception? */
       l_is_on_error_raise boolean := ('Raise' = '#7#');
 
@@ -1390,6 +1446,7 @@ select 'Yes' as val
       assert_not_oracle_maintained( q'#"OBJECT_OWNER"#' );
 
       set_on_error_raise(l_is_on_error_raise);
+      set_reuse_settings(l_is_reuse_settings);
 
       log_init(l_log_level);
       log_start('Compile with PL/Scope');
@@ -1420,12 +1477,12 @@ select 'Yes' as val
    
       /* Compile code */
       if l_is_compile_code then
-         if l_is_reuse_settings then
-            recomp_reuse_settings( in_schema_name => q'#"OBJECT_OWNER"#'
-                                 , in_identifiers => '#1#'
-                                 , in_statements  => '#2#' );
+         if l_is_use_legacy_impl then
+            recomp_legacy_impl( q'#"OBJECT_OWNER"#' );
          else
-            recomp_session_settings( q'#"OBJECT_OWNER"#' );
+            recomp_impl( in_schema_name => q'#"OBJECT_OWNER"#'
+                       , in_identifiers => '#1#'
+                       , in_statements  => '#2#' );
          end if;
       end if;
       
@@ -1582,10 +1639,10 @@ select 'Yes' as val
       log_end('Compile private synonyms');
    end compile_private_synonyms;
 
-   procedure recomp_session_settings (in_schema_name in varchar2)
+   procedure recomp_legacy_impl (in_schema_name in varchar2)
    is
    begin
-      log_start('Compile schema, using session settings');
+      log_start('Compile schema, legacy implementation (using session settings)');
       
       /* Compile types */
       <<types>>
@@ -1632,10 +1689,10 @@ select 'Yes' as val
       );
       log_summary('dbms_utility.compile_schema');
 
-      log_end('Compile schema, using session settings');
-   end recomp_session_settings;
+      log_end('Compile schema, legacy implementation (using session settings)');
+   end recomp_legacy_impl;
 
-   procedure recomp_reuse_settings (
+   procedure recomp_impl (
       in_schema_name  in varchar2,
       in_identifiers  in varchar2,
       in_statements   in varchar2
@@ -1902,7 +1959,8 @@ select 'Yes' as val
       end process_synonym;
   
    begin
-      log_start('Compile schema (reuse settings)');
+      log_start('Compile schema (' || case when g_is_reuse_settings then
+            'reuse settings' else 'using session settings' end || ')');
 
       open c_dep_ordered_schem_objs(in_schema_name);
       fetch c_dep_ordered_schem_objs bulk collect into l_schem_objs;
@@ -1955,8 +2013,9 @@ select 'Yes' as val
                            ' body'
                      end
                   || case 
-                        when l_schem_objs(i).type not in ( 'VIEW',
-                           'MATERIALIZED VIEW', 'OPERATOR' ) 
+                        when g_is_reuse_settings 
+                           and l_schem_objs(i).type not in ( 'VIEW',
+                                  'MATERIALIZED VIEW', 'OPERATOR' ) 
                         then
                            compile_settings( 
                               in_plsql_optimize_level  => l_schem_objs(i).plsql_optimize_level,
@@ -1981,14 +2040,21 @@ select 'Yes' as val
       end if;
 
       log_summary;      
-      log_end('Compile schema (reuse settings)');
-   end recomp_reuse_settings;
+      log_end('Compile schema (' || case when g_is_reuse_settings then
+            'reuse settings' else 'using session settings' end || ')');
+   end recomp_impl;
 
    procedure set_on_error_raise(in_is_on_error_raise in boolean)
    is
    begin
       g_is_on_error_raise := in_is_on_error_raise;
    end set_on_error_raise;
+
+   procedure set_reuse_settings(in_is_reuse_settings in boolean)
+   is
+   begin
+      g_is_reuse_settings := in_is_reuse_settings;
+   end set_reuse_settings;
 
    procedure exec_dyn_stmt(
       in_stmt              in varchar2,
