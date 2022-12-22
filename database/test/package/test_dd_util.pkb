@@ -53,6 +53,18 @@ create or replace package body test_dd_util is
       wrap_dyn_exec('create synonym syn_nonexistent for to_be_dropped_t1');
       wrap_dyn_exec('drop table to_be_dropped_t1 purge');
 
+      <<create_mview>>
+      declare
+         e_mview_exists exception;
+         pragma exception_init(e_mview_exists, -12006);
+      begin
+         wrap_dyn_exec(q'[create materialized view mv1 as
+                          select deptno from dept]');
+      exception
+         when e_mview_exists then
+            null;
+      end create_mview;
+
       -- issue 31: fix ORA-6550 that occurs from time to time while querying dba_synonyms
       ut_runner.rebuild_annotation_cache($$PLSQL_UNIT_OWNER);
    end setup;
@@ -62,6 +74,7 @@ create or replace package body test_dd_util is
    --
    procedure teardown is
    begin
+      wrap_dyn_exec('drop materialized view mv1');
       wrap_dyn_exec('drop synonym syn_nonexistent');
       wrap_dyn_exec('drop synonym syn_loop3');
       wrap_dyn_exec('drop synonym syn_loop2');
@@ -234,6 +247,35 @@ create or replace package body test_dd_util is
       l_actual := dd_util.get_view_source(o_input);
       ut.expect(l_actual).to_(be_null);
    end test_get_view_source;
+
+   --
+   -- test_get_mview_source
+   --
+   procedure test_get_mview_source is
+      o_input    obj_type;
+      l_actual   clob;
+      l_expected clob := 'select deptno from dept';
+   begin
+      -- act
+      o_input  := obj_type(user, 'MATERIALIZED VIEW', 'MV1');
+      l_actual := dd_util.get_view_source(o_input);      
+      -- assert
+      ut.expect(l_actual).to_equal(l_expected);
+   end test_get_mview_source;
+
+   --
+   -- test_get_table_source
+   --
+   procedure test_get_table_source is
+      o_input  obj_type;
+      l_actual clob;
+   begin
+      -- act
+      o_input  := obj_type(user, 'TABLE', 'DEPT');
+      l_actual := dd_util.get_view_source(o_input);      
+      -- assert
+      ut.expect(l_actual).to_be_null;
+   end test_get_table_source;
 
    --
    -- wrap_dyn_exec: wrapper for execute immediate

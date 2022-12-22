@@ -119,7 +119,7 @@ create or replace package body lineage_util is
                                      );
                if in_recursive = 1 and not l_is_skipped_recursion then
                   <<second_level_dependencies>>
-                  for r_dep2 in (
+                  for r_dep2 in ( -- NOSONAR: false positive of plsql:UseNativeSqlJoinsInsteadOfEmbeddedCursorLoopsCheck
                      select value(p) as col
                        from table(
                                lineage_util.get_dep_cols_from_view(
@@ -252,7 +252,7 @@ create or replace package body lineage_util is
          if l_column_id is not null then
             t_col.delete;
             <<column_dendencies>>
-            for r_col2 in (
+            for r_col2 in ( -- NOSONAR: false positive of plsql:UseNativeSqlJoinsInsteadOfEmbeddedCursorLoopsCheck
                select value(p) as col
                  from table(
                          lineage_util.get_dep_cols_from_query(
@@ -269,7 +269,7 @@ create or replace package body lineage_util is
             end loop column_dendencies;
             if t_col.count > 0 then
                <<populate_result>>
-               for i in 1..t_col.count
+               for i in 1..t_col.count -- NOSONAR: t_col is always dense
                loop
                   t_result.extend;
                   t_result(t_result.count) := col_lineage_type(
@@ -360,7 +360,7 @@ create or replace package body lineage_util is
          for r_target in c_table
          loop
             <<cols>>
-            for r_col in c_col(
+            for r_col in c_col( -- NOSONAR: false positive of plsql:UseNativeSqlJoinsInsteadOfEmbeddedCursorLoopsCheck
                p_owner       => r_target.owner,
                p_object_type => r_target.object_type,
                p_object_name => r_target.object_name
@@ -377,7 +377,7 @@ create or replace package body lineage_util is
             if t_result.count = l_prev_count then
                -- no columns found, all-column wildcard expression
                <<all_cols>>
-               for r_col in c_all_col(
+               for r_col in c_all_col( -- NOSONAR: false positive of plsql:UseNativeSqlJoinsInsteadOfEmbeddedCursorLoopsCheck
                   p_owner       => r_target.owner,
                   p_object_name => r_target.object_name
                )
