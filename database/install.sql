@@ -86,8 +86,8 @@ show errors
 set sqlterminator off
 @./utils/view/plscope_naming.sql
 show errors
-
 set sqlterminator on
+@./utils/view/plscope_naming-comment.sql
 
 prompt ====================================================================
 prompt Grants

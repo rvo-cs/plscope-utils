@@ -15,7 +15,7 @@
 */
 create or replace view plscope_naming as
    with
-      /* 
+     /* 
       * You may configure regular expressions for every name check. 
       * Here's an example for overriding every attribute used in this view
       * to combine various naming conventions:
@@ -38,7 +38,7 @@ create or replace view plscope_naming as
               plscope_context.set_attr('SUBTYPE_REGEX',               '(^tp?_.*$)|(.*_type?$)');
            end;
       *
-      * To restore default-settings call: 
+      * To restore default settings, call: 
       *
            begin
               plscope_context.remove_all;
