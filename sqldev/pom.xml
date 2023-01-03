@@ -58,6 +58,18 @@
 	<!-- Build Settings -->
 	<build>
 		<sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
+		<resources>
+			<resource>
+				<directory>${project.basedir}/src/main/resources</directory>
+				<includes>
+					<include>**/PlscopeResources.properties</include>
+					<include>**/action/compile_with_plscope.xml</include>
+					<include>**/editor/plscope-utils-viewers.xml</include>
+					<include>**/navigator/plscope-utils-nodes.xml</include>
+					<include>**/report/plscope-utils-reports.xml</include>
+				</includes>
+			</resource>
+		</resources>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
