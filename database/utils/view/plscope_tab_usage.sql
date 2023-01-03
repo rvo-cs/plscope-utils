@@ -81,8 +81,8 @@ create or replace view plscope_tab_usage as
       cycle ref_owner, ref_type, ref_name set is_cycle to 'Y' default 'N',
       -- eliminate duplicate dependencies, keeping the minimum path_len; add the 
       -- base_object_type column, which is the type of the first object (if any)
-      -- which is not a synonym, in case we're going down a chain of synonyms;
-      -- the is_base_object flag is set to 'YES' for that object, otherwise null
+      -- which is not a synonym, in case we're going down a chain of synonyms; the
+      -- is_base_object flag is set to 'YES' for that object, otherwise null
       dep_trans_closure as (
          select owner,
                 type,
