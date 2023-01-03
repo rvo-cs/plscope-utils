@@ -7,119 +7,1108 @@
 	<!-- first item based on title is considered independent of minversion/maxversion -->
 	<item connType="Oracle" type="CONNECTION" reload="true" minversion="11.1">
 		<title>Compile with PL/Scope...</title>
-		<prompt type="radio">
+        <help><![CDATA[This dialog enables to recompile objects in the target schema, with PL/Scope or without.
+
+Additionally, private synonyms in the schema, and/or public synonyms into it, may be recompiled (optional).
+
+BEWARE!
+Recompiling PL/SQL code (and/or synonyms) may have cascading side effects, e.g.:
+. invalidation of dependent objects, possibly in other schemas
+. discarding the state of packages, causing ORA-04068 exceptions
+Make sure you know what you are doing.
+
+Note: this action is purposely disabled for SYS, SYSTEM, and other Oracle-maintained accounts.
+
+Tip: if the Log to DBMS_OUTPUT option is On, don't forget to make a database call from a SQL worksheet,
+e.g. exec null; after running this action, in order to have SQL Developer read from the output buffer.]]>
+        </help>
+        <prompt required="true">                            <!-- index: 0 -->
+            <label>Use DBA or ALL views?</label>
+            <default><![CDATA[select case
+          when count(*) = 6 then
+             'Dba'
+          else
+             'All'
+          end as default_value
+  from all_views
+ where owner = 'SYS'
+   and view_name in ( 'DBA_OBJECTS',
+                      'DBA_SYNONYMS',
+                      'DBA_DEPENDENCIES',
+                      'DBA_MVIEWS',
+                      'DBA_PLSQL_OBJECT_SETTINGS',
+                      'DBA_TYPES' )
+]]>
+            </default>
+            <value><![CDATA[select vlist.val
+  from ( select 'Dba' as val, 0 as rn from dual
+         union all
+         select 'All' as val, 1 as rn from dual
+       ) vlist,
+       ( select case
+                   when count(*) = 6 then
+                      1
+                   else
+                      -1
+                end as order_indic
+           from all_views
+          where owner = 'SYS'
+            and view_name in ( 'DBA_OBJECTS',
+                               'DBA_SYNONYMS',
+                               'DBA_DEPENDENCIES',
+                               'DBA_MVIEWS',
+                               'DBA_PLSQL_OBJECT_SETTINGS',
+                               'DBA_TYPES' )
+       ) prio
+ order by vlist.rn * prio.order_indic
+]]>
+            </value>
+        </prompt>
+		<prompt type="radio">                               <!-- index: 1 -->
 			<label>Identifiers</label>
 			<value><![CDATA[STATIC:ALL:NONE:PUBLIC:SQL:PLSQL]]></value>
 		</prompt>
-		<prompt type="radio">
+		<prompt type="radio">                               <!-- index: 2 -->
 			<label>Statements</label>
 			<value><![CDATA[STATIC:ALL:NONE]]></value>
 		</prompt>
-		<prompt>
+		<prompt reload="true:0" required="true">            <!-- index: 3 -->
 			<label>Compile Code?</label>
-			<value><![CDATA[STATIC:Yes:No]]>
+            <default><![CDATA[select case
+          when q'#"OBJECT_OWNER"#' in ( /* Oracle-maintained accounts */
+             'ANONYMOUS'    , 'APPQOSSYS'        , 'AUDSYS',
+             'CTXSYS'       , 'DBSFWUSER'        , 'DBSNMP',
+             'DVF'          , 'DVSYS'            , 'EXFSYS',
+             'GGSYS'        , 'GSMADMIN_INTERNAL', 'GSMCATUSER',
+             'GSMROOTUSER'  , 'GSMUSER'          , 'LBACSYS',
+             'MDSYS'        , 'MGMT_VIEW'        , 'OJVMSYS',
+             'OLAPSYS'      , 'ORDDATA'          , 'ORDPLUGINS',
+             'ORDSYS'       , 'OUTLN'            , 'OWBSYS',
+             'REMOTE_SCHEDULER_AGENT'            , 'SI_INFORMTN_SCHEMA',
+             'SYS'          , 'SYSBACKUP'        , 'SYSDG',
+             'SYSKM'        , 'SYSMAN'           , 'SYSRAC',
+             'SYSTEM'       , 'WK_TEST'          , 'WKPROXY',
+             'WKSYS'        , 'WMSYS'            , 'XDB'
+          )
+          then
+             'No'
+          else
+             'Yes, reuse settings'
+       end as val
+  from dual
+ where :0 is not null
+]]>
+			</default>
+            <value><![CDATA[select val
+  from ( select 1 as pri,
+                'Yes, reuse settings' as val
+           from dual
+          union all
+         select mnu.pri,
+                mnu.val || case
+                              when chk.cnt_grp > 1 then
+                                 '  !!! WARNING !!!'
+                           end as val
+           from ( select 2 as pri,
+                         'Yes, use session settings' as val
+                    from dual
+                   union all
+                  select 3 as pri,
+                         'Yes, use session settings [legacy impl.]' as val
+                    from dual
+                ) mnu,
+                ( select case
+                            when :0 is not null then
+                               count(*)
+                         end as cnt_grp
+                    from ( select plsql_optimize_level,
+                                  plsql_code_type,
+                                  plsql_debug,
+                                  plsql_warnings,
+                                  nls_length_semantics
+                             from #0#_plsql_object_settings
+                            where owner = q'#"OBJECT_OWNER"#'
+                            group by plsql_optimize_level,
+                                  plsql_code_type,
+                                  plsql_debug,
+                                  plsql_warnings,
+                                  nls_length_semantics
+                         )
+                ) chk
+          union all
+         select 4 as pri,
+                'No' as val
+           from dual
+       )
+ where q'#"OBJECT_OWNER"#' not in ( /* Oracle-maintained accounts */
+          'ANONYMOUS'    , 'APPQOSSYS'        , 'AUDSYS',
+          'CTXSYS'       , 'DBSFWUSER'        , 'DBSNMP',
+          'DVF'          , 'DVSYS'            , 'EXFSYS',
+          'GGSYS'        , 'GSMADMIN_INTERNAL', 'GSMCATUSER',
+          'GSMROOTUSER'  , 'GSMUSER'          , 'LBACSYS',
+          'MDSYS'        , 'MGMT_VIEW'        , 'OJVMSYS',
+          'OLAPSYS'      , 'ORDDATA'          , 'ORDPLUGINS',
+          'ORDSYS'       , 'OUTLN'            , 'OWBSYS',
+          'REMOTE_SCHEDULER_AGENT'            , 'SI_INFORMTN_SCHEMA',
+          'SYS'          , 'SYSBACKUP'        , 'SYSDG',
+          'SYSKM'        , 'SYSMAN'           , 'SYSRAC',
+          'SYSTEM'       , 'WK_TEST'          , 'WKPROXY',
+          'WKSYS'        , 'WMSYS'            , 'XDB'
+       )
+       or pri >= 4
+ order by pri asc
+]]>
 			</value>
 		</prompt>
-		<prompt>
-			<label>Compile Synonyms?</label>
-			<value><![CDATA[STATIC:Yes:No]]>
+		<prompt>                                            <!-- index: 4 -->
+			<label>Compile Public Synonyms?</label>
+            <default><![CDATA[STATIC:No]]>
+			</default>
+			<value><![CDATA[select 'No' as val
+  from dual
+ union all
+select 'Yes' as val
+  from dual
+ where q'#"OBJECT_OWNER"#' not in ( /* Oracle-maintained accounts */
+          'ANONYMOUS'    , 'APPQOSSYS'        , 'AUDSYS',
+          'CTXSYS'       , 'DBSFWUSER'        , 'DBSNMP',
+          'DVF'          , 'DVSYS'            , 'EXFSYS',
+          'GGSYS'        , 'GSMADMIN_INTERNAL', 'GSMCATUSER',
+          'GSMROOTUSER'  , 'GSMUSER'          , 'LBACSYS',
+          'MDSYS'        , 'MGMT_VIEW'        , 'OJVMSYS',
+          'OLAPSYS'      , 'ORDDATA'          , 'ORDPLUGINS',
+          'ORDSYS'       , 'OUTLN'            , 'OWBSYS',
+          'REMOTE_SCHEDULER_AGENT'            , 'SI_INFORMTN_SCHEMA',
+          'SYS'          , 'SYSBACKUP'        , 'SYSDG',
+          'SYSKM'        , 'SYSMAN'           , 'SYSRAC',
+          'SYSTEM'       , 'WK_TEST'          , 'WKPROXY',
+          'WKSYS'        , 'WMSYS'            , 'XDB'
+       )
+]]>
 			</value>
+		</prompt>
+		<prompt>                                            <!-- index: 5 -->
+			<label>Compile Private Synonyms?</label>
+            <default><![CDATA[STATIC:No]]>
+			</default>
+			<value><![CDATA[select 'No' as val
+  from dual
+ union all
+select 'Yes' as val
+  from dual
+ where q'#"OBJECT_OWNER"#' not in ( /* Oracle-maintained accounts */
+          'ANONYMOUS'    , 'APPQOSSYS'        , 'AUDSYS',
+          'CTXSYS'       , 'DBSFWUSER'        , 'DBSNMP',
+          'DVF'          , 'DVSYS'            , 'EXFSYS',
+          'GGSYS'        , 'GSMADMIN_INTERNAL', 'GSMCATUSER',
+          'GSMROOTUSER'  , 'GSMUSER'          , 'LBACSYS',
+          'MDSYS'        , 'MGMT_VIEW'        , 'OJVMSYS',
+          'OLAPSYS'      , 'ORDDATA'          , 'ORDPLUGINS',
+          'ORDSYS'       , 'OUTLN'            , 'OWBSYS',
+          'REMOTE_SCHEDULER_AGENT'            , 'SI_INFORMTN_SCHEMA',
+          'SYS'          , 'SYSBACKUP'        , 'SYSDG',
+          'SYSKM'        , 'SYSMAN'           , 'SYSRAC',
+          'SYSTEM'       , 'WK_TEST'          , 'WKPROXY',
+          'WKSYS'        , 'WMSYS'            , 'XDB'
+       )
+]]>
+			</value>
+		</prompt>
+		<prompt>                                            <!-- index: 6 -->
+			<label>Log to DBMS_OUTPUT?</label>
+            <default><![CDATA[STATIC:Off]]>
+			</default>
+			<value><![CDATA[STATIC:Off:On - Summary only:On - Failed statements:On - All details]]>
+			</value>
+		</prompt>
+		<prompt type="radio">                               <!-- index: 7 -->
+			<label>Unexpected error handling</label>
+			<value><![CDATA[STATIC:Continue:Raise]]></value>
+		</prompt>
+		<prompt type="confirm">                             <!-- index: 8 -->
+			<label>Confirm actions for target schema: #"OBJECT_OWNER"# ?</label>
 		</prompt>
 		<sql>
-			<![CDATA[
-declare
-   e_is_not_udt     exception;
-   e_has_table_deps exception;
-   e_no_privs       exception;
-   pragma exception_init(e_is_not_udt, -22307);
-   pragma exception_init(e_has_table_deps, -2311);
-   pragma exception_init(e_no_privs, -1031);
-begin
-   if dbms_db_version.version <= 11 or
-      dbms_db_version.version = 12 and dbms_db_version.release = 1
-   then
-      /* PL/Scope identifiers since 11.1 */
-      execute immediate q'[ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#']';
-   else
-      /* PL/Scope statements since 12.2 */
-      execute immediate q'[ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#, STATEMENTS:#1#']';
-   end if;
-   if not (dbms_db_version.version = 11 and dbms_db_version.version = 1) and '#3#' = 'Yes' then
+			<![CDATA[declare
+   /* Expected error codes */
+   co_oerrn_is_not_udt          constant pls_integer := -22307;
+   co_oerrn_typ_has_table_deps  constant pls_integer := -2311;
+   co_oerrn_lib_has_table_deps  constant pls_integer := -4069;
+   co_oerrn_no_privs            constant pls_integer := -1031;
+   co_oerrn_success_with_error  constant pls_integer := -24344;
+
+   subtype oerrn_type is pls_integer;
+   type t_oerrns_type is table of oerrn_type;  /* For lists of expected error codes */
+
+   type t_errcnt_map_type is table of pls_integer index by oerrn_type;
+   g_errcnt t_errcnt_map_type;   /* For counting successful/failed statements */
+
+   /* Levels of log verbosity */
+   co_log_level_off             constant pls_integer := 0;
+   co_log_level_summary         constant pls_integer := 1;
+   co_log_level_failed_stmt     constant pls_integer := 2;
+   co_log_level_everything      constant pls_integer := 3;
+
+   g_log_level pls_integer := co_log_level_off;  /* User-specified verbosity level */
+
+   co_log_ind_step constant pls_integer := 3;    /* Log indentation step */
+   g_log_ind_level pls_integer := 0;             /* Log indentation level */
+
+   /* What to do if a compile statement fails unexpectedly */
+   g_is_on_error_raise boolean;  /* true => raise, false => continue */
+
+   /* Shall we reuse prior settings when recompiling, or apply session settings? */
+   g_is_reuse_settings boolean;  /* true => reuse prior settings, 
+                                    false => apply session settings */
+
+   /* Forward decl. */
+   procedure assert_not_oracle_maintained (in_schema_name in varchar2);
+   procedure set_plscope_settings (in_identifiers in varchar2, in_statements in varchar2);
+   procedure assert_schema_has_no_ccflags (in_schema_name in varchar2);
+   procedure compile_public_synonyms (in_schema_name in varchar2);
+   procedure compile_private_synonyms (in_schema_name in varchar2);
+   procedure recomp_legacy_impl (in_schema_name in varchar2);
+   procedure recomp_impl (in_schema_name in varchar2, 
+         in_identifiers in varchar2, in_statements in varchar2);
+   procedure set_on_error_raise(in_is_on_error_raise in boolean);
+   procedure set_reuse_settings(in_is_reuse_settings in boolean);
+   procedure exec_dyn_stmt(in_stmt in varchar2, in_expected_errors in t_oerrns_type);
+   procedure log_init (in_level in pls_integer);
+   procedure log_start (in_step_name in varchar2);
+   procedure log_end (in_step_name in varchar2);
+   procedure log_summary (in_step_name in varchar2 default null);
+   procedure log (in_msg in varchar2, in_level in pls_integer default co_log_level_summary);
+   procedure log_stmt (in_sqlcode in pls_integer, in_stmt in varchar2,
+         in_errmsg in varchar2 default null, in_status in varchar2 default null);
+
+   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+   /* Main procedure; all placeholder substitutions are done here. */
+   /* (But see below for the exception to this rule.)              */
+   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+   procedure main
+   is
+      /* Shall we compile public synonyms? */
+      l_is_compile_pub_syn boolean := ('Yes' = '#4#');
+
+      /* Shall we compile private synonyms? */
+      l_is_compile_priv_syn boolean := ('Yes' = '#5#');
+
+      /* Shall we compile code? */
+      l_is_compile_code boolean := ('Yes' = substr(
+            '#3#', 
+            1, 3
+         ));
+
+      /* And if so, shall we reuse settings, or apply session settings? */
+      l_is_reuse_settings boolean := (regexp_like(
+            '#3#',
+            '^Yes.*reuse settings'
+         ));
+
+      /* And shall we use the legacy impl. for recompiling? */
+      l_is_use_legacy_impl boolean := (regexp_like(
+            '#3#',
+            '^Yes.*legacy impl\.'
+         ));
+
+      /* Shall we send feedback to the dbms_output buffer? */
+      l_log_level pls_integer := case '#6#'
+                                    when 'Off' then
+                                       co_log_level_off
+                                    when 'On - Summary only' then
+                                       co_log_level_summary
+                                    when 'On - Failed statements' then
+                                       co_log_level_failed_stmt
+                                    when 'On - All details' then
+                                       co_log_level_everything
+                                 end;
+
+      /* What shall we do if a compile statement raises an unanticipated exception? */
+      l_is_on_error_raise boolean := ('Raise' = '#7#');
+
+   begin
+      /* Sanity check: this action is not for Oracle-maintained accounts. */
+      assert_not_oracle_maintained( q'#"OBJECT_OWNER"#' );
+
+      set_on_error_raise(l_is_on_error_raise);
+      set_reuse_settings(l_is_reuse_settings);
+
+      log_init(l_log_level);
+      log_start('Compile with PL/Scope');
+      log('Target schema: ' || dbms_assert.enquote_name(q'#"OBJECT_OWNER"#', false));
+      
+      /* Set the plscope_settings session parameter */
+      set_plscope_settings ( in_identifiers => '#1#'
+                           , in_statements  => '#2#' );
+      
+      /* 
+         If compiling PL/SQL code and using session settings, we must make sure that 
+         plsql_ccflags is not used in any object in the schema, and abandon if it is, 
+         in order to prevent from losing module-specific settings of that parameter.
+       */
+      if l_is_compile_code and not l_is_reuse_settings then
+         assert_schema_has_no_ccflags( q'#"OBJECT_OWNER"#' );
+      end if;
+
       /* Compilation of synonyms have been introduced with EBR in 11.2 */
-      <<synonyms>>
+      if not (dbms_db_version.version = 11 and dbms_db_version.version = 1) then
+         if l_is_compile_pub_syn then
+            compile_public_synonyms( q'#"OBJECT_OWNER"#' );
+         end if;
+         if l_is_compile_priv_syn then
+            compile_private_synonyms( q'#"OBJECT_OWNER"#' );
+         end if;
+      end if;
+   
+      /* Compile code */
+      if l_is_compile_code then
+         if l_is_use_legacy_impl then
+            recomp_legacy_impl( q'#"OBJECT_OWNER"#' );
+         else
+            recomp_impl( in_schema_name => q'#"OBJECT_OWNER"#'
+                       , in_identifiers => '#1#'
+                       , in_statements  => '#2#' );
+         end if;
+      end if;
+      
+      log_end('Compile with PL/Scope');
+   end main;
+
+   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+   /* Note: no text substitution after this line, except #0# ~> ALL|DBA in view names.  */
+   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+   procedure assert_not_oracle_maintained (in_schema_name in varchar2)
+   is
+      l_oracle_maintained varchar2(1 char);
+   begin
+      <<check_username>>
+      begin
+         execute immediate
+            case
+               when dbms_db_version.version >= 12 then
+                  q'[select usr.oracle_maintained
+                       from sys.all_users usr
+                      where usr.username = :name]'
+               else
+                  /* 11g: static list of known Oracle-maintained accounts */
+                  q'[select case
+                               when usr.username in (
+                                  'ANONYMOUS'    , 'APPQOSSYS'        , 'AUDSYS',
+                                  'CTXSYS'       , 'DBSFWUSER'        , 'DBSNMP',
+                                  'DVF'          , 'DVSYS'            , 'EXFSYS',
+                                  'GGSYS'        , 'GSMADMIN_INTERNAL', 'GSMCATUSER',
+                                  'GSMROOTUSER'  , 'GSMUSER'          , 'LBACSYS',
+                                  'MDSYS'        , 'MGMT_VIEW'        , 'OJVMSYS',
+                                  'OLAPSYS'      , 'ORDDATA'          , 'ORDPLUGINS',
+                                  'ORDSYS'       , 'OUTLN'            , 'OWBSYS',
+                                  'REMOTE_SCHEDULER_AGENT'            , 'SI_INFORMTN_SCHEMA',
+                                  'SYS'          , 'SYSBACKUP'        , 'SYSDG',
+                                  'SYSKM'        , 'SYSMAN'           , 'SYSRAC',
+                                  'SYSTEM'       , 'WK_TEST'          , 'WKPROXY',
+                                  'WKSYS'        , 'WMSYS'            , 'XDB' )
+                              then
+                                 'Y'
+                              else
+                                 'N'
+                            end as oracle_maintained
+                       from sys.all_users usr
+                      where usr.username = :name]'
+            end
+            into l_oracle_maintained
+            using in_schema_name;
+      exception
+         when no_data_found then
+            null;
+      end check_username;
+      if l_oracle_maintained is null then
+         raise_application_error(-20000, 'User '
+            || dbms_assert.enquote_name(in_schema_name, false)
+            || ' not found');
+      elsif l_oracle_maintained = 'Y' then
+         raise_application_error(-20000, 'Unsupported: '
+            || dbms_assert.enquote_name(in_schema_name, false)
+            || ' is an Oracle-maintained account');
+      end if;
+   end assert_not_oracle_maintained;
+
+   procedure set_plscope_settings (in_identifiers in varchar2, in_statements in varchar2)
+   is
+      l_plscope_settings varchar2(50 char);
+   begin
+      l_plscope_settings := 
+         case
+            when dbms_db_version.version <= 11 
+               or dbms_db_version.version = 12 and dbms_db_version.release = 1
+            then
+               /* PL/Scope identifiers since 11.1 */
+               'IDENTIFIERS:' || in_identifiers
+            else
+               /* PL/Scope statements since 12.2 */
+               'IDENTIFIERS:' || in_identifiers || ', STATEMENTS:' || in_statements
+         end;
+      execute immediate 'alter session set plscope_settings = ''' || l_plscope_settings || '''';
+      log('plscope_settings set to ''' || l_plscope_settings || ''' in session');
+   end set_plscope_settings;
+   
+   procedure assert_schema_has_no_ccflags (in_schema_name in varchar2)
+   is
+      l_cnt number;
+   begin
+      select count(*) into l_cnt
+        from sys.#0#_plsql_object_settings
+       where owner = in_schema_name
+         and plsql_ccflags is not null;
+
+      if l_cnt > 0 then
+         /* 
+            Schemas using plsql_ccflags are not supported if recompiling
+            with session parameters, otherwise module-specific settings 
+            of that parameter could be lost.
+          */
+         raise_application_error(-20000,
+                                 'Unsupported: PLSQL_CCFLAGS is used in the '
+            || dbms_assert.enquote_name(in_schema_name, false)
+            || ' schema');
+      end if;
+   end assert_schema_has_no_ccflags;
+
+   procedure compile_public_synonyms (in_schema_name in varchar2)
+   is
+   begin
+      log_start('Compile public synonyms');
       for r in (
          select synonym_name
-           from all_synonyms
-          where owner = user
-      )
-      loop
-         execute immediate 'ALTER SYNONYM "'
-            || r.synonym_name
-            || '" COMPILE';
-      end loop synonyms;
-      <<public_synonyms>>
-      for r in (
-         select synonym_name
-           from sys.all_synonyms
+           from sys.#0#_synonyms
           where owner = 'PUBLIC'
-            and table_owner = user
+            and table_owner = in_schema_name
       )
       loop
-         <<compile_public_synonym>>
-         begin
-            execute immediate 'ALTER PUBLIC SYNONYM "'
-               || r.synonym_name
-               || '" COMPILE';
-         exception
-            when e_no_privs then
-               /* ignore when user does not have create public synonym and drop public synonym privileges */
-               null;
-         end compile_public_synonym;
-      end loop public_synonyms;
-   end if;
-   if '#2#' = 'Yes' then
+         exec_dyn_stmt(
+            in_stmt => 'alter public synonym '
+               || dbms_assert.enquote_name(r.synonym_name, false)
+               || ' compile',
+            in_expected_errors => t_oerrns_type(
+               co_oerrn_no_privs  /* user does not have create public synonym 
+                                     and drop public synonym privileges */
+            )
+         );
+      end loop;
+      log_summary;
+      log_end('Compile public synonyms');
+   end compile_public_synonyms;
+
+   procedure compile_private_synonyms (in_schema_name in varchar2)
+   is
+   begin
+      log_start('Compile private synonyms');
+      for r in (
+         select owner,
+                synonym_name
+           from sys.#0#_synonyms
+          where owner = in_schema_name
+      )
+      loop
+         exec_dyn_stmt(
+            in_stmt => 'alter synonym '
+               || dbms_assert.enquote_name(r.owner, false)
+               || '.'
+               || dbms_assert.enquote_name(r.synonym_name, false)
+               || ' compile',
+            in_expected_errors => t_oerrns_type(
+               co_oerrn_no_privs  /* insufficient privileges */
+            )
+         );
+      end loop;
+      log_summary;
+      log_end('Compile private synonyms');
+   end compile_private_synonyms;
+
+   procedure recomp_legacy_impl (in_schema_name in varchar2)
+   is
+   begin
+      log_start('Compile schema, legacy implementation (using session settings)');
+      
       /* Compile types */
       <<types>>
       for r in (
-         select o.object_type, o.object_name, count(d.name) as priority
-           from sys.all_objects o
-           left join all_dependencies d
+         select o.owner, 
+                o.object_type, 
+                o.object_name, 
+                count(d.name) as priority
+           from sys.#0#_objects o
+           left join sys.#0#_dependencies d
              on d.owner = o.owner
             and d.type = o.object_type
             and d.name = o.object_name
-          where o.owner = user
+          where o.owner = in_schema_name
             and o.object_type in ('TYPE', 'TYPE BODY')
-          group by o.object_type, o.object_name
+          group by o.owner, o.object_type, o.object_name
           order by priority
       )
       loop
-         <<compile_type>>
-         begin
-            if r.object_type = 'TYPE' then
-               execute immediate 'ALTER TYPE "'
-                  || r.object_name
-                  || '" COMPILE';
-            else
-               execute immediate 'ALTER TYPE "'
-                  || r.object_name
-                  || '" COMPILE BODY';
-            end if;
-         exception
-            when e_is_not_udt then
-               /* ignore errors for non user-defined types */
-               null;
-            when e_has_table_deps then
-               /* ignore when type is used in tables */
-               null;
-         end compile_type;
+         exec_dyn_stmt(
+            in_stmt => 'alter type '
+                  || dbms_assert.enquote_name(r.owner, false)
+                  || '.'
+                  || dbms_assert.enquote_name(r.object_name, false)
+                  || ' compile'
+                  || case r.object_type
+                        when 'TYPE BODY' then
+                           ' body'
+                     end,
+            in_expected_errors => t_oerrns_type(
+               co_oerrn_is_not_udt,          /* non user-defined types */
+               co_oerrn_typ_has_table_deps,  /* type has table dependents */
+               co_oerrn_lib_has_table_deps   /* library has table dependents */
+            )
+         );
       end loop types;
-      /* Compile schema handles procedures, functions, packages, views and triggers only */
+      log_summary('compilation of types');
+
+      /* compile_schema handles procedures, functions, packages, views and triggers only */
       dbms_utility.compile_schema(
-         schema         => user,
+         schema         => in_schema_name,
          compile_all    => true,
          reuse_settings => false
       );
-   end if;
+      log_summary('dbms_utility.compile_schema');
+
+      log_end('Compile schema, legacy implementation (using session settings)');
+   end recomp_legacy_impl;
+
+   procedure recomp_impl (
+      in_schema_name  in varchar2,
+      in_identifiers  in varchar2,
+      in_statements   in varchar2
+   )
+   is
+      cursor c_dep_ordered_schem_objs (p_schema_name in varchar2) is
+         with
+            target_objs as (
+               select o.owner,
+                      o.object_type,
+                      o.object_name
+                 from sys.#0#_objects o
+                where o.owner = p_schema_name
+                  and o.object_type in ( 'PROCEDURE'
+                                       , 'FUNCTION'
+                                       , 'PACKAGE'
+                                       , 'PACKAGE BODY'
+                                       , 'TRIGGER'
+                                       , 'TYPE' 
+                                       , 'TYPE BODY'
+                                       , 'LIBRARY'
+                                       , 'OPERATOR'
+                                       , 'VIEW'
+                                       , 'MATERIALIZED VIEW'
+                                       , 'SYNONYM' )
+                union all
+               select s.owner,
+                      'SYNONYM'        as object_type,
+                      s.synonym_name   as object_name
+                 from sys.#0#_synonyms s
+                where s.owner = 'PUBLIC'
+                  and s.table_owner = p_schema_name
+            ),
+            dep_chains(
+               owner,
+               type,
+               name,
+               dependent_owner,
+               dependent_type,
+               dependent_name,
+               dep_depth
+            ) as (
+               select o.owner,
+                      o.object_type,
+                      o.object_name,
+                      o.owner,
+                      o.object_type,
+                      o.object_name, 
+                      0
+                 from target_objs o
+                union all
+               select d.referenced_owner,
+                      d.referenced_type,
+                      d.referenced_name,
+                      d.owner,
+                      d.type,
+                      d.name,
+                      o.dep_depth + 1
+                 from dep_chains o,
+                      sys.#0#_dependencies d
+                where o.owner = d.owner
+                  and o.type = d.type
+                  and o.name = d.name
+            )
+            cycle 
+               owner,
+               type,
+               name,
+               dependent_owner,
+               dependent_type,
+               dependent_name
+            set is_cycle to 'Y' default 'N',
+            dep_ordered_objs as (
+               select o.owner,
+                      o.type,
+                      o.name,
+                      max(o.dep_depth) as dep_depth
+                 from dep_chains o
+                where (o.owner = p_schema_name
+                        and o.type in ( 'PROCEDURE'
+                                      , 'FUNCTION'
+                                      , 'PACKAGE'
+                                      , 'PACKAGE BODY'
+                                      , 'TRIGGER'
+                                      , 'TYPE' 
+                                      , 'TYPE BODY'
+                                      , 'LIBRARY'
+                                      , 'OPERATOR'
+                                      , 'VIEW'
+                                      , 'MATERIALIZED VIEW'
+                                      , 'SYNONYM' ) 
+                      )
+                      or (o.owner = 'PUBLIC'
+                           and o.type = 'SYNONYM')
+                group by o.owner,
+                      o.type,
+                      o.name
+            ),
+            dep_ordered_objs_excl_shadow as (
+               select obj.owner,
+                      obj.type,
+                      obj.name,
+                      obj.dep_depth
+                 from dep_ordered_objs obj,
+                      sys.#0#_types typ
+                where obj.owner = typ.owner (+)
+                  and obj.name = typ.type_name (+)
+                  and (obj.type not in ('TYPE', 'TYPE BODY')
+                        or typ.owner is not null /* exclude shadow types */ )
+            )
+         select obj.owner,
+                obj.type,
+                obj.name,
+                pls.plsql_optimize_level,
+                pls.plsql_code_type,
+                pls.plsql_debug,
+                pls.plsql_warnings,
+                pls.nls_length_semantics,
+                pls.plsql_ccflags,
+                pls.plscope_settings
+           from dep_ordered_objs_excl_shadow obj,
+                sys.#0#_plsql_object_settings pls
+          where pls.owner (+) = obj.owner
+            and pls.type (+) = obj.type
+            and pls.name (+) = obj.name
+          order by obj.dep_depth desc,
+                obj.type,
+                obj.name;
+   
+      subtype r_schem_obj_type is c_dep_ordered_schem_objs%rowtype;
+      type t_schem_objs_type is table of r_schem_obj_type index by pls_integer;
+
+      l_schem_objs t_schem_objs_type;
+      
+      function compile_settings(
+         in_plsql_optimize_level  in number,
+         in_plsql_code_type       in varchar2,
+         in_plsql_debug           in varchar2,
+         in_plsql_warnings        in varchar2,
+         in_plsql_ccflags         in varchar2,
+         in_nls_length_semantics  in varchar2,
+         in_identifiers           in varchar2,
+         in_statements            in varchar2
+      )
+      return varchar2
+      is
+      begin
+         return case
+                   when in_plsql_optimize_level is not null then
+                      ' plsql_optimize_level=' || to_char(in_plsql_optimize_level)
+                end
+            || case
+                  when in_plsql_code_type is not null then
+                     ' plsql_code_type=' || in_plsql_code_type
+               end
+            || case
+                  when in_plsql_debug is not null then
+                     ' plsql_debug=' || in_plsql_debug
+               end
+            || case
+                  when in_plsql_warnings is not null then
+                     ' plsql_warnings=''' || in_plsql_warnings || ''''
+               end
+            || case
+                  when in_plsql_ccflags is not null then
+                     ' plsql_ccflags=''' || in_plsql_ccflags || ''''
+               end
+            || case
+                  when in_nls_length_semantics is not null then
+                     ' nls_length_semantics=' || in_nls_length_semantics
+               end
+            || ' plscope_settings=''' 
+            || case
+                  when dbms_db_version.version <= 11 
+                     or dbms_db_version.version = 12 and dbms_db_version.release = 1
+                  then
+                     /* PL/Scope identifiers since 11.1 */
+                     'IDENTIFIERS:' || in_identifiers
+                  else
+                     /* PL/Scope statements since 12.2 */
+                     'IDENTIFIERS:' || in_identifiers || ', STATEMENTS:' || in_statements
+               end
+            || '''';
+      end compile_settings;
+  
+      function is_valid_view(
+         in_schema_name  in varchar2,
+         in_view_name    in varchar2
+      ) 
+      return boolean
+      is
+         l_status sys.#0#_objects.status %type;
+      begin
+         select obj.status into l_status
+           from sys.#0#_objects obj
+          where obj.owner = in_schema_name
+            and obj.object_type = 'VIEW'
+            and obj.object_name = in_view_name;
+         return l_status = 'VALID';
+      end is_valid_view;
+      
+      function is_mv_compile_state_valid(
+         in_schema_name  in varchar2,
+         in_mview_name   in varchar2
+      ) 
+      return boolean
+      is
+         l_compile_state sys.#0#_mviews.compile_state %type;
+      begin
+         select mv.compile_state into l_compile_state
+           from sys.#0#_mviews mv
+          where mv.owner = in_schema_name
+            and mv.mview_name = in_mview_name;
+         return l_compile_state = 'VALID';
+      end is_mv_compile_state_valid;
+
+      /* Recompile the specified synonym if it's invalid and its translation is valid */
+      procedure process_synonym(
+         in_syn_owner  in varchar2,
+         in_syn_name   in varchar2
+      )
+      is
+         l_syn_status sys.#0#_objects.status %type;
+      begin
+         <<check_transl_and_status>>
+         begin
+            select obj.status into l_syn_status
+              from sys.#0#_objects obj
+             where obj.owner = in_syn_owner
+               and obj.object_type = 'SYNONYM'
+               and obj.object_name = in_syn_name 
+               and exists (select 1
+                             from sys.#0#_synonyms s,
+                                  sys.#0#_objects o
+                            where s.owner = in_syn_owner
+                              and s.synonym_name = in_syn_name
+                              and o.owner = s.table_owner
+                              and o.object_name = s.table_name
+                              and o.namespace = 1
+                              and o.subobject_name is null);
+         exception
+            when no_data_found then
+               /* likely cause: this synonym has no valid translation */
+               null;
+         end check_transl_and_status;
+         if l_syn_status = 'INVALID' then
+            exec_dyn_stmt(
+               in_stmt => 'alter '
+                  || case
+                        when in_syn_owner = 'PUBLIC' then
+                           'public synonym '
+                        else
+                           'synonym '
+                           || dbms_assert.enquote_name(in_syn_owner, false) 
+                           || '.'
+                     end
+                  || dbms_assert.enquote_name(in_syn_name, false)
+                  || ' compile',
+               in_expected_errors => t_oerrns_type(
+                  co_oerrn_no_privs  /* insufficient privileges */
+               )
+            );
+         end if;
+      end process_synonym;
+  
+   begin
+      log_start('Compile schema (' || case when g_is_reuse_settings then
+            'reuse settings' else 'using session settings' end || ')');
+
+      open c_dep_ordered_schem_objs(in_schema_name);
+      fetch c_dep_ordered_schem_objs bulk collect into l_schem_objs;
+      close c_dep_ordered_schem_objs;
+      
+      if l_schem_objs.count > 0 then
+         <<process_schem_objs>>
+         for i in l_schem_objs.first .. l_schem_objs.last loop
+            /* 
+              Skip views that are not invalid, and materialized views which 
+              don't need to be compiled, in order to spare invalidations
+             */
+            if (l_schem_objs(i).type = 'VIEW'
+                  and is_valid_view(in_schema_name, l_schem_objs(i).name))
+               or (l_schem_objs(i).type = 'MATERIALIZED VIEW'
+                     and is_mv_compile_state_valid(in_schema_name, l_schem_objs(i).name))
+            then
+               continue process_schem_objs;
+            end if;
+
+            /* Synonyms are handled in their own procedure */
+            if l_schem_objs(i).type = 'SYNONYM' then
+               process_synonym(
+                  in_syn_owner => l_schem_objs(i).owner,
+                  in_syn_name  => l_schem_objs(i).name
+               );
+               continue process_schem_objs;
+            end if;
+
+            /* Other objects */
+            exec_dyn_stmt(
+               in_stmt => 'alter '
+                  || case l_schem_objs(i).type 
+                        when 'TYPE BODY' then
+                           'type'
+                        when 'PACKAGE BODY' then
+                           'package'
+                        else
+                           lower(l_schem_objs(i).type)
+                     end
+                  || ' '
+                  || dbms_assert.enquote_name(l_schem_objs(i).owner, false)
+                  || '.'
+                  || dbms_assert.enquote_name(l_schem_objs(i).name, false)
+                  || ' compile'
+                  || case  
+                        when l_schem_objs(i).type in ('TYPE', 'PACKAGE') then
+                           ' specification'
+                        when l_schem_objs(i).type in ('TYPE BODY', 'PACKAGE BODY') then
+                           ' body'
+                     end
+                  || case 
+                        when g_is_reuse_settings 
+                           and l_schem_objs(i).type not in ( 'VIEW',
+                                  'MATERIALIZED VIEW', 'OPERATOR' ) 
+                        then
+                           compile_settings( 
+                              in_plsql_optimize_level  => l_schem_objs(i).plsql_optimize_level,
+                              in_plsql_code_type       => l_schem_objs(i).plsql_code_type,
+                              in_plsql_debug           => l_schem_objs(i).plsql_debug,
+                              in_plsql_warnings        => l_schem_objs(i).plsql_warnings,
+                              in_plsql_ccflags         => l_schem_objs(i).plsql_ccflags,
+                              in_nls_length_semantics  => l_schem_objs(i).nls_length_semantics,
+                              in_identifiers           => in_identifiers,
+                              in_statements            => in_statements
+                           )
+                     end,
+               in_expected_errors => t_oerrns_type(
+                  co_oerrn_is_not_udt,          /* errors for non user-defined types */
+                  co_oerrn_typ_has_table_deps,  /* type has table dependents */
+                  co_oerrn_lib_has_table_deps,  /* library has table dependents */
+                  co_oerrn_success_with_error,  /* object has compilation errors */
+                  co_oerrn_no_privs             /* insufficient privileges */
+               )
+            );
+         end loop process_schem_objs;
+      end if;
+
+      log_summary;      
+      log_end('Compile schema (' || case when g_is_reuse_settings then
+            'reuse settings' else 'using session settings' end || ')');
+   end recomp_impl;
+
+   procedure set_on_error_raise(in_is_on_error_raise in boolean)
+   is
+   begin
+      g_is_on_error_raise := in_is_on_error_raise;
+   end set_on_error_raise;
+
+   procedure set_reuse_settings(in_is_reuse_settings in boolean)
+   is
+   begin
+      g_is_reuse_settings := in_is_reuse_settings;
+   end set_reuse_settings;
+
+   procedure exec_dyn_stmt(
+      in_stmt              in varchar2,
+      in_expected_errors   in t_oerrns_type
+   )
+   is
+      l_sqlcode pls_integer;
+   begin
+      <<stmt_dyn_exec>>
+      begin
+         execute immediate in_stmt;
+         l_sqlcode := 0;
+      exception
+         when others then
+            <<stmt_failure_handler>>
+            declare
+               l_is_expected_error boolean;
+            begin
+               l_sqlcode := sqlcode;
+               l_is_expected_error := (in_expected_errors is not null
+                                         and l_sqlcode member of in_expected_errors);
+               log_stmt(
+                  in_sqlcode => l_sqlcode, 
+                  in_stmt    => in_stmt, 
+                  in_errmsg  => sqlerrm,
+                  in_status  => case 
+                                   when not l_is_expected_error then
+                                      'UNEXPECTED ERROR'
+                                end
+               );
+               if g_is_on_error_raise and not l_is_expected_error then
+                  raise;
+               end if;
+            end stmt_failure_handler;
+      end stmt_dyn_exec;
+      if l_sqlcode = 0 then
+         log_stmt(l_sqlcode, in_stmt);
+      end if;
+   end exec_dyn_stmt;
+
+   procedure log_init (in_level in pls_integer)
+   is
+   begin
+      if in_level != co_log_level_off then
+         dbms_output.enable(null);
+         g_log_level := in_level;
+      end if;
+   end log_init;
+
+   procedure log_start (in_step_name in varchar2)
+   is
+   begin
+      log(in_step_name || ' -- start');
+      g_log_ind_level := g_log_ind_level + 1;
+   end log_start;
+
+   procedure log_end (in_step_name in varchar2)
+   is
+   begin
+      g_log_ind_level := greatest(0, g_log_ind_level - 1);
+      log(in_step_name || ' -- end');
+      if g_log_ind_level = 0 then
+         log(null);
+      end if;
+   end log_end;
+
+   procedure log (
+      in_msg   in varchar2, 
+      in_level in pls_integer default co_log_level_summary
+   )
+   is
+   begin
+      if g_log_level >= in_level then
+         if in_msg is not null then
+            dbms_output.put_line(rpad(' ', co_log_ind_step * g_log_ind_level, ' ') || in_msg);
+         else
+            dbms_output.new_line;
+         end if;
+      end if;
+   end log;
+
+   procedure log_stmt(
+      in_sqlcode  in pls_integer, 
+      in_stmt     in varchar2,
+      in_errmsg   in varchar2 default null,
+      in_status   in varchar2 default null
+   )
+   is
+   begin
+      if g_errcnt.exists(in_sqlcode) then
+         g_errcnt(in_sqlcode) := g_errcnt(in_sqlcode) + 1;
+      else
+         g_errcnt(in_sqlcode) := 1;
+      end if;
+      if in_sqlcode = 0 then
+         log('SUCCESS: ' || in_stmt, co_log_level_everything);
+      elsif in_status is not null then
+         log(in_status || ': ' || in_stmt);
+         if in_errmsg is not null then
+            log(rpad(' ', co_log_ind_step) || in_errmsg);
+         end if;
+      else
+         log('FAILED: ' || in_stmt, co_log_level_failed_stmt);
+         if in_errmsg is not null then
+            log(rpad(' ', co_log_ind_step) || in_errmsg, co_log_level_failed_stmt);
+         end if;
+      end if;
+   end log_stmt;
+
+   procedure log_summary (in_step_name in varchar2 default null)
+   is
+      l_oerrn oerrn_type;
+      l_cnt_stmt_total pls_integer := 0;
+      l_cnt_stmt_failed pls_integer := 0;
+   begin
+      if in_step_name is not null then
+         log('Step completed: ' || in_step_name);
+      end if;
+      l_oerrn := g_errcnt.first;
+      <<compute_totals>>
+      while l_oerrn is not null loop
+         l_cnt_stmt_total := l_cnt_stmt_total + g_errcnt(l_oerrn);
+         if l_oerrn != 0 then
+            l_cnt_stmt_failed := l_cnt_stmt_failed + g_errcnt(l_oerrn);
+         end if;
+         l_oerrn := g_errcnt.next(l_oerrn);
+      end loop compute_totals;
+      if l_cnt_stmt_total > 0 then
+         log('Count of statements: ' || to_char(l_cnt_stmt_total)
+            || case 
+                  when l_cnt_stmt_failed = 0 then
+                     ' (no failed statement)'
+                  else
+                     ' (' || to_char(l_cnt_stmt_total - l_cnt_stmt_failed) || ' success, '
+                     || to_char(l_cnt_stmt_failed) || ' error'
+                     || case when l_cnt_stmt_failed > 1 then 's' end || ')'
+               end);
+         if l_cnt_stmt_failed > 0 then
+            log('Exception' || case when l_cnt_stmt_failed > 1 then 's' end || ':');
+            l_oerrn := g_errcnt.first;
+            <<error_recap>>
+            while l_oerrn is not null loop
+               if l_oerrn != 0 then
+                  log('  . ORA' || to_char(l_oerrn, 'S00000')
+                     || case l_oerrn
+                           when co_oerrn_is_not_udt then
+                              ' (not a user-defined type)'
+                           when co_oerrn_typ_has_table_deps then
+                              ' (valid type has type or table dependents)'
+                           when co_oerrn_lib_has_table_deps then
+                              ' (library has table dependents)'
+                           when co_oerrn_no_privs then
+                              ' (insufficient privileges)'
+                           when co_oerrn_success_with_error then
+                              ' (success with compilation error)'
+                        end
+                     || ': ' || to_char(g_errcnt(l_oerrn))
+                  );
+               end if;
+               l_oerrn := g_errcnt.next(l_oerrn);
+            end loop error_recap;
+         end if;
+      end if;
+      g_errcnt.delete;
+   end log_summary;
+
+begin
+   main;
 end;
 ]]>
 		</sql>
@@ -132,119 +1121,1108 @@ end;
 	<!-- Copy of the previous item. Changed type only. A menu cannot be assigned to multiple nodes. -->
 	<item connType="Oracle" type="plscope-utils-root" reload="true" minversion="11.1">
 		<title>Compile with PL/Scope...</title>
-		<prompt type="radio">
+        <help><![CDATA[This dialog enables to recompile objects in the target schema, with PL/Scope or without.
+
+Additionally, private synonyms in the schema, and/or public synonyms into it, may be recompiled (optional).
+
+BEWARE!
+Recompiling PL/SQL code (and/or synonyms) may have cascading side effects, e.g.:
+. invalidation of dependent objects, possibly in other schemas
+. discarding the state of packages, causing ORA-04068 exceptions
+Make sure you know what you are doing.
+
+Note: this action is purposely disabled for SYS, SYSTEM, and other Oracle-maintained accounts.
+
+Tip: if the Log to DBMS_OUTPUT option is On, don't forget to make a database call from a SQL worksheet,
+e.g. exec null; after running this action, in order to have SQL Developer read from the output buffer.]]>
+        </help>
+        <prompt required="true">                            <!-- index: 0 -->
+            <label>Use DBA or ALL views?</label>
+            <default><![CDATA[select case
+          when count(*) = 6 then
+             'Dba'
+          else
+             'All'
+          end as default_value
+  from all_views
+ where owner = 'SYS'
+   and view_name in ( 'DBA_OBJECTS',
+                      'DBA_SYNONYMS',
+                      'DBA_DEPENDENCIES',
+                      'DBA_MVIEWS',
+                      'DBA_PLSQL_OBJECT_SETTINGS',
+                      'DBA_TYPES' )
+]]>
+            </default>
+            <value><![CDATA[select vlist.val
+  from ( select 'Dba' as val, 0 as rn from dual
+         union all
+         select 'All' as val, 1 as rn from dual
+       ) vlist,
+       ( select case
+                   when count(*) = 6 then
+                      1
+                   else
+                      -1
+                end as order_indic
+           from all_views
+          where owner = 'SYS'
+            and view_name in ( 'DBA_OBJECTS',
+                               'DBA_SYNONYMS',
+                               'DBA_DEPENDENCIES',
+                               'DBA_MVIEWS',
+                               'DBA_PLSQL_OBJECT_SETTINGS',
+                               'DBA_TYPES' )
+       ) prio
+ order by vlist.rn * prio.order_indic
+]]>
+            </value>
+        </prompt>
+		<prompt type="radio">                               <!-- index: 1 -->
 			<label>Identifiers</label>
 			<value><![CDATA[STATIC:ALL:NONE:PUBLIC:SQL:PLSQL]]></value>
 		</prompt>
-		<prompt type="radio">
+		<prompt type="radio">                               <!-- index: 2 -->
 			<label>Statements</label>
 			<value><![CDATA[STATIC:ALL:NONE]]></value>
 		</prompt>
-		<prompt>
+		<prompt reload="true:0" required="true">            <!-- index: 3 -->
 			<label>Compile Code?</label>
-			<value><![CDATA[STATIC:Yes:No]]>
+            <default><![CDATA[select case
+          when q'#"OBJECT_OWNER"#' in ( /* Oracle-maintained accounts */
+             'ANONYMOUS'    , 'APPQOSSYS'        , 'AUDSYS',
+             'CTXSYS'       , 'DBSFWUSER'        , 'DBSNMP',
+             'DVF'          , 'DVSYS'            , 'EXFSYS',
+             'GGSYS'        , 'GSMADMIN_INTERNAL', 'GSMCATUSER',
+             'GSMROOTUSER'  , 'GSMUSER'          , 'LBACSYS',
+             'MDSYS'        , 'MGMT_VIEW'        , 'OJVMSYS',
+             'OLAPSYS'      , 'ORDDATA'          , 'ORDPLUGINS',
+             'ORDSYS'       , 'OUTLN'            , 'OWBSYS',
+             'REMOTE_SCHEDULER_AGENT'            , 'SI_INFORMTN_SCHEMA',
+             'SYS'          , 'SYSBACKUP'        , 'SYSDG',
+             'SYSKM'        , 'SYSMAN'           , 'SYSRAC',
+             'SYSTEM'       , 'WK_TEST'          , 'WKPROXY',
+             'WKSYS'        , 'WMSYS'            , 'XDB'
+          )
+          then
+             'No'
+          else
+             'Yes, reuse settings'
+       end as val
+  from dual
+ where :0 is not null
+]]>
+			</default>
+            <value><![CDATA[select val
+  from ( select 1 as pri,
+                'Yes, reuse settings' as val
+           from dual
+          union all
+         select mnu.pri,
+                mnu.val || case
+                              when chk.cnt_grp > 1 then
+                                 '  !!! WARNING !!!'
+                           end as val
+           from ( select 2 as pri,
+                         'Yes, use session settings' as val
+                    from dual
+                   union all
+                  select 3 as pri,
+                         'Yes, use session settings [legacy impl.]' as val
+                    from dual
+                ) mnu,
+                ( select case
+                            when :0 is not null then
+                               count(*)
+                         end as cnt_grp
+                    from ( select plsql_optimize_level,
+                                  plsql_code_type,
+                                  plsql_debug,
+                                  plsql_warnings,
+                                  nls_length_semantics
+                             from #0#_plsql_object_settings
+                            where owner = q'#"OBJECT_OWNER"#'
+                            group by plsql_optimize_level,
+                                  plsql_code_type,
+                                  plsql_debug,
+                                  plsql_warnings,
+                                  nls_length_semantics
+                         )
+                ) chk
+          union all
+         select 4 as pri,
+                'No' as val
+           from dual
+       )
+ where q'#"OBJECT_OWNER"#' not in ( /* Oracle-maintained accounts */
+          'ANONYMOUS'    , 'APPQOSSYS'        , 'AUDSYS',
+          'CTXSYS'       , 'DBSFWUSER'        , 'DBSNMP',
+          'DVF'          , 'DVSYS'            , 'EXFSYS',
+          'GGSYS'        , 'GSMADMIN_INTERNAL', 'GSMCATUSER',
+          'GSMROOTUSER'  , 'GSMUSER'          , 'LBACSYS',
+          'MDSYS'        , 'MGMT_VIEW'        , 'OJVMSYS',
+          'OLAPSYS'      , 'ORDDATA'          , 'ORDPLUGINS',
+          'ORDSYS'       , 'OUTLN'            , 'OWBSYS',
+          'REMOTE_SCHEDULER_AGENT'            , 'SI_INFORMTN_SCHEMA',
+          'SYS'          , 'SYSBACKUP'        , 'SYSDG',
+          'SYSKM'        , 'SYSMAN'           , 'SYSRAC',
+          'SYSTEM'       , 'WK_TEST'          , 'WKPROXY',
+          'WKSYS'        , 'WMSYS'            , 'XDB'
+       )
+       or pri >= 4
+ order by pri asc
+]]>
 			</value>
 		</prompt>
-		<prompt>
-			<label>Compile Synonyms?</label>
-			<value><![CDATA[STATIC:Yes:No]]>
+		<prompt>                                            <!-- index: 4 -->
+			<label>Compile Public Synonyms?</label>
+            <default><![CDATA[STATIC:No]]>
+			</default>
+			<value><![CDATA[select 'No' as val
+  from dual
+ union all
+select 'Yes' as val
+  from dual
+ where q'#"OBJECT_OWNER"#' not in ( /* Oracle-maintained accounts */
+          'ANONYMOUS'    , 'APPQOSSYS'        , 'AUDSYS',
+          'CTXSYS'       , 'DBSFWUSER'        , 'DBSNMP',
+          'DVF'          , 'DVSYS'            , 'EXFSYS',
+          'GGSYS'        , 'GSMADMIN_INTERNAL', 'GSMCATUSER',
+          'GSMROOTUSER'  , 'GSMUSER'          , 'LBACSYS',
+          'MDSYS'        , 'MGMT_VIEW'        , 'OJVMSYS',
+          'OLAPSYS'      , 'ORDDATA'          , 'ORDPLUGINS',
+          'ORDSYS'       , 'OUTLN'            , 'OWBSYS',
+          'REMOTE_SCHEDULER_AGENT'            , 'SI_INFORMTN_SCHEMA',
+          'SYS'          , 'SYSBACKUP'        , 'SYSDG',
+          'SYSKM'        , 'SYSMAN'           , 'SYSRAC',
+          'SYSTEM'       , 'WK_TEST'          , 'WKPROXY',
+          'WKSYS'        , 'WMSYS'            , 'XDB'
+       )
+]]>
 			</value>
+		</prompt>
+		<prompt>                                            <!-- index: 5 -->
+			<label>Compile Private Synonyms?</label>
+            <default><![CDATA[STATIC:No]]>
+			</default>
+			<value><![CDATA[select 'No' as val
+  from dual
+ union all
+select 'Yes' as val
+  from dual
+ where q'#"OBJECT_OWNER"#' not in ( /* Oracle-maintained accounts */
+          'ANONYMOUS'    , 'APPQOSSYS'        , 'AUDSYS',
+          'CTXSYS'       , 'DBSFWUSER'        , 'DBSNMP',
+          'DVF'          , 'DVSYS'            , 'EXFSYS',
+          'GGSYS'        , 'GSMADMIN_INTERNAL', 'GSMCATUSER',
+          'GSMROOTUSER'  , 'GSMUSER'          , 'LBACSYS',
+          'MDSYS'        , 'MGMT_VIEW'        , 'OJVMSYS',
+          'OLAPSYS'      , 'ORDDATA'          , 'ORDPLUGINS',
+          'ORDSYS'       , 'OUTLN'            , 'OWBSYS',
+          'REMOTE_SCHEDULER_AGENT'            , 'SI_INFORMTN_SCHEMA',
+          'SYS'          , 'SYSBACKUP'        , 'SYSDG',
+          'SYSKM'        , 'SYSMAN'           , 'SYSRAC',
+          'SYSTEM'       , 'WK_TEST'          , 'WKPROXY',
+          'WKSYS'        , 'WMSYS'            , 'XDB'
+       )
+]]>
+			</value>
+		</prompt>
+		<prompt>                                            <!-- index: 6 -->
+			<label>Log to DBMS_OUTPUT?</label>
+            <default><![CDATA[STATIC:Off]]>
+			</default>
+			<value><![CDATA[STATIC:Off:On - Summary only:On - Failed statements:On - All details]]>
+			</value>
+		</prompt>
+		<prompt type="radio">                               <!-- index: 7 -->
+			<label>Unexpected error handling</label>
+			<value><![CDATA[STATIC:Continue:Raise]]></value>
+		</prompt>
+		<prompt type="confirm">                             <!-- index: 8 -->
+			<label>Confirm actions for target schema: #"OBJECT_OWNER"# ?</label>
 		</prompt>
 		<sql>
-			<![CDATA[
-declare
-   e_is_not_udt     exception;
-   e_has_table_deps exception;
-   e_no_privs       exception;
-   pragma exception_init(e_is_not_udt, -22307);
-   pragma exception_init(e_has_table_deps, -2311);
-   pragma exception_init(e_no_privs, -1031);
-begin
-   if dbms_db_version.version <= 11 or
-      dbms_db_version.version = 12 and dbms_db_version.release = 1
-   then
-      /* PL/Scope identifiers since 11.1 */
-      execute immediate q'[ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#']';
-   else
-      /* PL/Scope statements since 12.2 */
-      execute immediate q'[ALTER SESSION SET plscope_settings='IDENTIFIERS:#0#, STATEMENTS:#1#']';
-   end if;
-   if not (dbms_db_version.version = 11 and dbms_db_version.version = 1) and '#3#' = 'Yes' then
+			<![CDATA[declare
+   /* Expected error codes */
+   co_oerrn_is_not_udt          constant pls_integer := -22307;
+   co_oerrn_typ_has_table_deps  constant pls_integer := -2311;
+   co_oerrn_lib_has_table_deps  constant pls_integer := -4069;
+   co_oerrn_no_privs            constant pls_integer := -1031;
+   co_oerrn_success_with_error  constant pls_integer := -24344;
+
+   subtype oerrn_type is pls_integer;
+   type t_oerrns_type is table of oerrn_type;  /* For lists of expected error codes */
+
+   type t_errcnt_map_type is table of pls_integer index by oerrn_type;
+   g_errcnt t_errcnt_map_type;   /* For counting successful/failed statements */
+
+   /* Levels of log verbosity */
+   co_log_level_off             constant pls_integer := 0;
+   co_log_level_summary         constant pls_integer := 1;
+   co_log_level_failed_stmt     constant pls_integer := 2;
+   co_log_level_everything      constant pls_integer := 3;
+
+   g_log_level pls_integer := co_log_level_off;  /* User-specified verbosity level */
+
+   co_log_ind_step constant pls_integer := 3;    /* Log indentation step */
+   g_log_ind_level pls_integer := 0;             /* Log indentation level */
+
+   /* What to do if a compile statement fails unexpectedly */
+   g_is_on_error_raise boolean;  /* true => raise, false => continue */
+
+   /* Shall we reuse prior settings when recompiling, or apply session settings? */
+   g_is_reuse_settings boolean;  /* true => reuse prior settings, 
+                                    false => apply session settings */
+
+   /* Forward decl. */
+   procedure assert_not_oracle_maintained (in_schema_name in varchar2);
+   procedure set_plscope_settings (in_identifiers in varchar2, in_statements in varchar2);
+   procedure assert_schema_has_no_ccflags (in_schema_name in varchar2);
+   procedure compile_public_synonyms (in_schema_name in varchar2);
+   procedure compile_private_synonyms (in_schema_name in varchar2);
+   procedure recomp_legacy_impl (in_schema_name in varchar2);
+   procedure recomp_impl (in_schema_name in varchar2, 
+         in_identifiers in varchar2, in_statements in varchar2);
+   procedure set_on_error_raise(in_is_on_error_raise in boolean);
+   procedure set_reuse_settings(in_is_reuse_settings in boolean);
+   procedure exec_dyn_stmt(in_stmt in varchar2, in_expected_errors in t_oerrns_type);
+   procedure log_init (in_level in pls_integer);
+   procedure log_start (in_step_name in varchar2);
+   procedure log_end (in_step_name in varchar2);
+   procedure log_summary (in_step_name in varchar2 default null);
+   procedure log (in_msg in varchar2, in_level in pls_integer default co_log_level_summary);
+   procedure log_stmt (in_sqlcode in pls_integer, in_stmt in varchar2,
+         in_errmsg in varchar2 default null, in_status in varchar2 default null);
+
+   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+   /* Main procedure; all placeholder substitutions are done here. */
+   /* (But see below for the exception to this rule.)              */
+   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+   procedure main
+   is
+      /* Shall we compile public synonyms? */
+      l_is_compile_pub_syn boolean := ('Yes' = '#4#');
+
+      /* Shall we compile private synonyms? */
+      l_is_compile_priv_syn boolean := ('Yes' = '#5#');
+
+      /* Shall we compile code? */
+      l_is_compile_code boolean := ('Yes' = substr(
+            '#3#', 
+            1, 3
+         ));
+
+      /* And if so, shall we reuse settings, or apply session settings? */
+      l_is_reuse_settings boolean := (regexp_like(
+            '#3#',
+            '^Yes.*reuse settings'
+         ));
+
+      /* And shall we use the legacy impl. for recompiling? */
+      l_is_use_legacy_impl boolean := (regexp_like(
+            '#3#',
+            '^Yes.*legacy impl\.'
+         ));
+
+      /* Shall we send feedback to the dbms_output buffer? */
+      l_log_level pls_integer := case '#6#'
+                                    when 'Off' then
+                                       co_log_level_off
+                                    when 'On - Summary only' then
+                                       co_log_level_summary
+                                    when 'On - Failed statements' then
+                                       co_log_level_failed_stmt
+                                    when 'On - All details' then
+                                       co_log_level_everything
+                                 end;
+
+      /* What shall we do if a compile statement raises an unanticipated exception? */
+      l_is_on_error_raise boolean := ('Raise' = '#7#');
+
+   begin
+      /* Sanity check: this action is not for Oracle-maintained accounts. */
+      assert_not_oracle_maintained( q'#"OBJECT_OWNER"#' );
+
+      set_on_error_raise(l_is_on_error_raise);
+      set_reuse_settings(l_is_reuse_settings);
+
+      log_init(l_log_level);
+      log_start('Compile with PL/Scope');
+      log('Target schema: ' || dbms_assert.enquote_name(q'#"OBJECT_OWNER"#', false));
+      
+      /* Set the plscope_settings session parameter */
+      set_plscope_settings ( in_identifiers => '#1#'
+                           , in_statements  => '#2#' );
+      
+      /* 
+         If compiling PL/SQL code and using session settings, we must make sure that 
+         plsql_ccflags is not used in any object in the schema, and abandon if it is, 
+         in order to prevent from losing module-specific settings of that parameter.
+       */
+      if l_is_compile_code and not l_is_reuse_settings then
+         assert_schema_has_no_ccflags( q'#"OBJECT_OWNER"#' );
+      end if;
+
       /* Compilation of synonyms have been introduced with EBR in 11.2 */
-      <<synonyms>>
+      if not (dbms_db_version.version = 11 and dbms_db_version.version = 1) then
+         if l_is_compile_pub_syn then
+            compile_public_synonyms( q'#"OBJECT_OWNER"#' );
+         end if;
+         if l_is_compile_priv_syn then
+            compile_private_synonyms( q'#"OBJECT_OWNER"#' );
+         end if;
+      end if;
+   
+      /* Compile code */
+      if l_is_compile_code then
+         if l_is_use_legacy_impl then
+            recomp_legacy_impl( q'#"OBJECT_OWNER"#' );
+         else
+            recomp_impl( in_schema_name => q'#"OBJECT_OWNER"#'
+                       , in_identifiers => '#1#'
+                       , in_statements  => '#2#' );
+         end if;
+      end if;
+      
+      log_end('Compile with PL/Scope');
+   end main;
+
+   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+   /* Note: no text substitution after this line, except #0# ~> ALL|DBA in view names.  */
+   /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+   procedure assert_not_oracle_maintained (in_schema_name in varchar2)
+   is
+      l_oracle_maintained varchar2(1 char);
+   begin
+      <<check_username>>
+      begin
+         execute immediate
+            case
+               when dbms_db_version.version >= 12 then
+                  q'[select usr.oracle_maintained
+                       from sys.all_users usr
+                      where usr.username = :name]'
+               else
+                  /* 11g: static list of known Oracle-maintained accounts */
+                  q'[select case
+                               when usr.username in (
+                                  'ANONYMOUS'    , 'APPQOSSYS'        , 'AUDSYS',
+                                  'CTXSYS'       , 'DBSFWUSER'        , 'DBSNMP',
+                                  'DVF'          , 'DVSYS'            , 'EXFSYS',
+                                  'GGSYS'        , 'GSMADMIN_INTERNAL', 'GSMCATUSER',
+                                  'GSMROOTUSER'  , 'GSMUSER'          , 'LBACSYS',
+                                  'MDSYS'        , 'MGMT_VIEW'        , 'OJVMSYS',
+                                  'OLAPSYS'      , 'ORDDATA'          , 'ORDPLUGINS',
+                                  'ORDSYS'       , 'OUTLN'            , 'OWBSYS',
+                                  'REMOTE_SCHEDULER_AGENT'            , 'SI_INFORMTN_SCHEMA',
+                                  'SYS'          , 'SYSBACKUP'        , 'SYSDG',
+                                  'SYSKM'        , 'SYSMAN'           , 'SYSRAC',
+                                  'SYSTEM'       , 'WK_TEST'          , 'WKPROXY',
+                                  'WKSYS'        , 'WMSYS'            , 'XDB' )
+                              then
+                                 'Y'
+                              else
+                                 'N'
+                            end as oracle_maintained
+                       from sys.all_users usr
+                      where usr.username = :name]'
+            end
+            into l_oracle_maintained
+            using in_schema_name;
+      exception
+         when no_data_found then
+            null;
+      end check_username;
+      if l_oracle_maintained is null then
+         raise_application_error(-20000, 'User '
+            || dbms_assert.enquote_name(in_schema_name, false)
+            || ' not found');
+      elsif l_oracle_maintained = 'Y' then
+         raise_application_error(-20000, 'Unsupported: '
+            || dbms_assert.enquote_name(in_schema_name, false)
+            || ' is an Oracle-maintained account');
+      end if;
+   end assert_not_oracle_maintained;
+
+   procedure set_plscope_settings (in_identifiers in varchar2, in_statements in varchar2)
+   is
+      l_plscope_settings varchar2(50 char);
+   begin
+      l_plscope_settings := 
+         case
+            when dbms_db_version.version <= 11 
+               or dbms_db_version.version = 12 and dbms_db_version.release = 1
+            then
+               /* PL/Scope identifiers since 11.1 */
+               'IDENTIFIERS:' || in_identifiers
+            else
+               /* PL/Scope statements since 12.2 */
+               'IDENTIFIERS:' || in_identifiers || ', STATEMENTS:' || in_statements
+         end;
+      execute immediate 'alter session set plscope_settings = ''' || l_plscope_settings || '''';
+      log('plscope_settings set to ''' || l_plscope_settings || ''' in session');
+   end set_plscope_settings;
+   
+   procedure assert_schema_has_no_ccflags (in_schema_name in varchar2)
+   is
+      l_cnt number;
+   begin
+      select count(*) into l_cnt
+        from sys.#0#_plsql_object_settings
+       where owner = in_schema_name
+         and plsql_ccflags is not null;
+
+      if l_cnt > 0 then
+         /* 
+            Schemas using plsql_ccflags are not supported if recompiling
+            with session parameters, otherwise module-specific settings 
+            of that parameter could be lost.
+          */
+         raise_application_error(-20000,
+                                 'Unsupported: PLSQL_CCFLAGS is used in the '
+            || dbms_assert.enquote_name(in_schema_name, false)
+            || ' schema');
+      end if;
+   end assert_schema_has_no_ccflags;
+
+   procedure compile_public_synonyms (in_schema_name in varchar2)
+   is
+   begin
+      log_start('Compile public synonyms');
       for r in (
          select synonym_name
-           from all_synonyms
-          where owner = user
-      )
-      loop
-         execute immediate 'ALTER SYNONYM "'
-            || r.synonym_name
-            || '" COMPILE';
-      end loop synonyms;
-      <<public_synonyms>>
-      for r in (
-         select synonym_name
-           from sys.all_synonyms
+           from sys.#0#_synonyms
           where owner = 'PUBLIC'
-            and table_owner = user
+            and table_owner = in_schema_name
       )
       loop
-         <<compile_public_synonym>>
-         begin
-            execute immediate 'ALTER PUBLIC SYNONYM "'
-               || r.synonym_name
-               || '" COMPILE';
-         exception
-            when e_no_privs then
-               /* ignore when user does not have create public synonym and drop public synonym privileges */
-               null;
-         end compile_public_synonym;
-      end loop public_synonyms;
-   end if;
-   if '#2#' = 'Yes' then
+         exec_dyn_stmt(
+            in_stmt => 'alter public synonym '
+               || dbms_assert.enquote_name(r.synonym_name, false)
+               || ' compile',
+            in_expected_errors => t_oerrns_type(
+               co_oerrn_no_privs  /* user does not have create public synonym 
+                                     and drop public synonym privileges */
+            )
+         );
+      end loop;
+      log_summary;
+      log_end('Compile public synonyms');
+   end compile_public_synonyms;
+
+   procedure compile_private_synonyms (in_schema_name in varchar2)
+   is
+   begin
+      log_start('Compile private synonyms');
+      for r in (
+         select owner,
+                synonym_name
+           from sys.#0#_synonyms
+          where owner = in_schema_name
+      )
+      loop
+         exec_dyn_stmt(
+            in_stmt => 'alter synonym '
+               || dbms_assert.enquote_name(r.owner, false)
+               || '.'
+               || dbms_assert.enquote_name(r.synonym_name, false)
+               || ' compile',
+            in_expected_errors => t_oerrns_type(
+               co_oerrn_no_privs  /* insufficient privileges */
+            )
+         );
+      end loop;
+      log_summary;
+      log_end('Compile private synonyms');
+   end compile_private_synonyms;
+
+   procedure recomp_legacy_impl (in_schema_name in varchar2)
+   is
+   begin
+      log_start('Compile schema, legacy implementation (using session settings)');
+      
       /* Compile types */
       <<types>>
       for r in (
-         select o.object_type, o.object_name, count(d.name) as priority
-           from sys.all_objects o
-           left join all_dependencies d
+         select o.owner, 
+                o.object_type, 
+                o.object_name, 
+                count(d.name) as priority
+           from sys.#0#_objects o
+           left join sys.#0#_dependencies d
              on d.owner = o.owner
             and d.type = o.object_type
             and d.name = o.object_name
-          where o.owner = user
+          where o.owner = in_schema_name
             and o.object_type in ('TYPE', 'TYPE BODY')
-          group by o.object_type, o.object_name
+          group by o.owner, o.object_type, o.object_name
           order by priority
       )
       loop
-         <<compile_type>>
-         begin
-            if r.object_type = 'TYPE' then
-               execute immediate 'ALTER TYPE "'
-                  || r.object_name
-                  || '" COMPILE';
-            else
-               execute immediate 'ALTER TYPE "'
-                  || r.object_name
-                  || '" COMPILE BODY';
-            end if;
-         exception
-            when e_is_not_udt then
-               /* ignore errors for non user-defined types */
-               null;
-            when e_has_table_deps then
-               /* ignore when type is used in tables */
-               null;
-         end compile_type;
+         exec_dyn_stmt(
+            in_stmt => 'alter type '
+                  || dbms_assert.enquote_name(r.owner, false)
+                  || '.'
+                  || dbms_assert.enquote_name(r.object_name, false)
+                  || ' compile'
+                  || case r.object_type
+                        when 'TYPE BODY' then
+                           ' body'
+                     end,
+            in_expected_errors => t_oerrns_type(
+               co_oerrn_is_not_udt,          /* non user-defined types */
+               co_oerrn_typ_has_table_deps,  /* type has table dependents */
+               co_oerrn_lib_has_table_deps   /* library has table dependents */
+            )
+         );
       end loop types;
-      /* Compile schema handles procedures, functions, packages, views and triggers only */
+      log_summary('compilation of types');
+
+      /* compile_schema handles procedures, functions, packages, views and triggers only */
       dbms_utility.compile_schema(
-         schema         => user,
+         schema         => in_schema_name,
          compile_all    => true,
          reuse_settings => false
       );
-   end if;
+      log_summary('dbms_utility.compile_schema');
+
+      log_end('Compile schema, legacy implementation (using session settings)');
+   end recomp_legacy_impl;
+
+   procedure recomp_impl (
+      in_schema_name  in varchar2,
+      in_identifiers  in varchar2,
+      in_statements   in varchar2
+   )
+   is
+      cursor c_dep_ordered_schem_objs (p_schema_name in varchar2) is
+         with
+            target_objs as (
+               select o.owner,
+                      o.object_type,
+                      o.object_name
+                 from sys.#0#_objects o
+                where o.owner = p_schema_name
+                  and o.object_type in ( 'PROCEDURE'
+                                       , 'FUNCTION'
+                                       , 'PACKAGE'
+                                       , 'PACKAGE BODY'
+                                       , 'TRIGGER'
+                                       , 'TYPE' 
+                                       , 'TYPE BODY'
+                                       , 'LIBRARY'
+                                       , 'OPERATOR'
+                                       , 'VIEW'
+                                       , 'MATERIALIZED VIEW'
+                                       , 'SYNONYM' )
+                union all
+               select s.owner,
+                      'SYNONYM'        as object_type,
+                      s.synonym_name   as object_name
+                 from sys.#0#_synonyms s
+                where s.owner = 'PUBLIC'
+                  and s.table_owner = p_schema_name
+            ),
+            dep_chains(
+               owner,
+               type,
+               name,
+               dependent_owner,
+               dependent_type,
+               dependent_name,
+               dep_depth
+            ) as (
+               select o.owner,
+                      o.object_type,
+                      o.object_name,
+                      o.owner,
+                      o.object_type,
+                      o.object_name, 
+                      0
+                 from target_objs o
+                union all
+               select d.referenced_owner,
+                      d.referenced_type,
+                      d.referenced_name,
+                      d.owner,
+                      d.type,
+                      d.name,
+                      o.dep_depth + 1
+                 from dep_chains o,
+                      sys.#0#_dependencies d
+                where o.owner = d.owner
+                  and o.type = d.type
+                  and o.name = d.name
+            )
+            cycle 
+               owner,
+               type,
+               name,
+               dependent_owner,
+               dependent_type,
+               dependent_name
+            set is_cycle to 'Y' default 'N',
+            dep_ordered_objs as (
+               select o.owner,
+                      o.type,
+                      o.name,
+                      max(o.dep_depth) as dep_depth
+                 from dep_chains o
+                where (o.owner = p_schema_name
+                        and o.type in ( 'PROCEDURE'
+                                      , 'FUNCTION'
+                                      , 'PACKAGE'
+                                      , 'PACKAGE BODY'
+                                      , 'TRIGGER'
+                                      , 'TYPE' 
+                                      , 'TYPE BODY'
+                                      , 'LIBRARY'
+                                      , 'OPERATOR'
+                                      , 'VIEW'
+                                      , 'MATERIALIZED VIEW'
+                                      , 'SYNONYM' ) 
+                      )
+                      or (o.owner = 'PUBLIC'
+                           and o.type = 'SYNONYM')
+                group by o.owner,
+                      o.type,
+                      o.name
+            ),
+            dep_ordered_objs_excl_shadow as (
+               select obj.owner,
+                      obj.type,
+                      obj.name,
+                      obj.dep_depth
+                 from dep_ordered_objs obj,
+                      sys.#0#_types typ
+                where obj.owner = typ.owner (+)
+                  and obj.name = typ.type_name (+)
+                  and (obj.type not in ('TYPE', 'TYPE BODY')
+                        or typ.owner is not null /* exclude shadow types */ )
+            )
+         select obj.owner,
+                obj.type,
+                obj.name,
+                pls.plsql_optimize_level,
+                pls.plsql_code_type,
+                pls.plsql_debug,
+                pls.plsql_warnings,
+                pls.nls_length_semantics,
+                pls.plsql_ccflags,
+                pls.plscope_settings
+           from dep_ordered_objs_excl_shadow obj,
+                sys.#0#_plsql_object_settings pls
+          where pls.owner (+) = obj.owner
+            and pls.type (+) = obj.type
+            and pls.name (+) = obj.name
+          order by obj.dep_depth desc,
+                obj.type,
+                obj.name;
+   
+      subtype r_schem_obj_type is c_dep_ordered_schem_objs%rowtype;
+      type t_schem_objs_type is table of r_schem_obj_type index by pls_integer;
+
+      l_schem_objs t_schem_objs_type;
+      
+      function compile_settings(
+         in_plsql_optimize_level  in number,
+         in_plsql_code_type       in varchar2,
+         in_plsql_debug           in varchar2,
+         in_plsql_warnings        in varchar2,
+         in_plsql_ccflags         in varchar2,
+         in_nls_length_semantics  in varchar2,
+         in_identifiers           in varchar2,
+         in_statements            in varchar2
+      )
+      return varchar2
+      is
+      begin
+         return case
+                   when in_plsql_optimize_level is not null then
+                      ' plsql_optimize_level=' || to_char(in_plsql_optimize_level)
+                end
+            || case
+                  when in_plsql_code_type is not null then
+                     ' plsql_code_type=' || in_plsql_code_type
+               end
+            || case
+                  when in_plsql_debug is not null then
+                     ' plsql_debug=' || in_plsql_debug
+               end
+            || case
+                  when in_plsql_warnings is not null then
+                     ' plsql_warnings=''' || in_plsql_warnings || ''''
+               end
+            || case
+                  when in_plsql_ccflags is not null then
+                     ' plsql_ccflags=''' || in_plsql_ccflags || ''''
+               end
+            || case
+                  when in_nls_length_semantics is not null then
+                     ' nls_length_semantics=' || in_nls_length_semantics
+               end
+            || ' plscope_settings=''' 
+            || case
+                  when dbms_db_version.version <= 11 
+                     or dbms_db_version.version = 12 and dbms_db_version.release = 1
+                  then
+                     /* PL/Scope identifiers since 11.1 */
+                     'IDENTIFIERS:' || in_identifiers
+                  else
+                     /* PL/Scope statements since 12.2 */
+                     'IDENTIFIERS:' || in_identifiers || ', STATEMENTS:' || in_statements
+               end
+            || '''';
+      end compile_settings;
+  
+      function is_valid_view(
+         in_schema_name  in varchar2,
+         in_view_name    in varchar2
+      ) 
+      return boolean
+      is
+         l_status sys.#0#_objects.status %type;
+      begin
+         select obj.status into l_status
+           from sys.#0#_objects obj
+          where obj.owner = in_schema_name
+            and obj.object_type = 'VIEW'
+            and obj.object_name = in_view_name;
+         return l_status = 'VALID';
+      end is_valid_view;
+      
+      function is_mv_compile_state_valid(
+         in_schema_name  in varchar2,
+         in_mview_name   in varchar2
+      ) 
+      return boolean
+      is
+         l_compile_state sys.#0#_mviews.compile_state %type;
+      begin
+         select mv.compile_state into l_compile_state
+           from sys.#0#_mviews mv
+          where mv.owner = in_schema_name
+            and mv.mview_name = in_mview_name;
+         return l_compile_state = 'VALID';
+      end is_mv_compile_state_valid;
+
+      /* Recompile the specified synonym if it's invalid and its translation is valid */
+      procedure process_synonym(
+         in_syn_owner  in varchar2,
+         in_syn_name   in varchar2
+      )
+      is
+         l_syn_status sys.#0#_objects.status %type;
+      begin
+         <<check_transl_and_status>>
+         begin
+            select obj.status into l_syn_status
+              from sys.#0#_objects obj
+             where obj.owner = in_syn_owner
+               and obj.object_type = 'SYNONYM'
+               and obj.object_name = in_syn_name 
+               and exists (select 1
+                             from sys.#0#_synonyms s,
+                                  sys.#0#_objects o
+                            where s.owner = in_syn_owner
+                              and s.synonym_name = in_syn_name
+                              and o.owner = s.table_owner
+                              and o.object_name = s.table_name
+                              and o.namespace = 1
+                              and o.subobject_name is null);
+         exception
+            when no_data_found then
+               /* likely cause: this synonym has no valid translation */
+               null;
+         end check_transl_and_status;
+         if l_syn_status = 'INVALID' then
+            exec_dyn_stmt(
+               in_stmt => 'alter '
+                  || case
+                        when in_syn_owner = 'PUBLIC' then
+                           'public synonym '
+                        else
+                           'synonym '
+                           || dbms_assert.enquote_name(in_syn_owner, false) 
+                           || '.'
+                     end
+                  || dbms_assert.enquote_name(in_syn_name, false)
+                  || ' compile',
+               in_expected_errors => t_oerrns_type(
+                  co_oerrn_no_privs  /* insufficient privileges */
+               )
+            );
+         end if;
+      end process_synonym;
+  
+   begin
+      log_start('Compile schema (' || case when g_is_reuse_settings then
+            'reuse settings' else 'using session settings' end || ')');
+
+      open c_dep_ordered_schem_objs(in_schema_name);
+      fetch c_dep_ordered_schem_objs bulk collect into l_schem_objs;
+      close c_dep_ordered_schem_objs;
+      
+      if l_schem_objs.count > 0 then
+         <<process_schem_objs>>
+         for i in l_schem_objs.first .. l_schem_objs.last loop
+            /* 
+              Skip views that are not invalid, and materialized views which 
+              don't need to be compiled, in order to spare invalidations
+             */
+            if (l_schem_objs(i).type = 'VIEW'
+                  and is_valid_view(in_schema_name, l_schem_objs(i).name))
+               or (l_schem_objs(i).type = 'MATERIALIZED VIEW'
+                     and is_mv_compile_state_valid(in_schema_name, l_schem_objs(i).name))
+            then
+               continue process_schem_objs;
+            end if;
+
+            /* Synonyms are handled in their own procedure */
+            if l_schem_objs(i).type = 'SYNONYM' then
+               process_synonym(
+                  in_syn_owner => l_schem_objs(i).owner,
+                  in_syn_name  => l_schem_objs(i).name
+               );
+               continue process_schem_objs;
+            end if;
+
+            /* Other objects */
+            exec_dyn_stmt(
+               in_stmt => 'alter '
+                  || case l_schem_objs(i).type 
+                        when 'TYPE BODY' then
+                           'type'
+                        when 'PACKAGE BODY' then
+                           'package'
+                        else
+                           lower(l_schem_objs(i).type)
+                     end
+                  || ' '
+                  || dbms_assert.enquote_name(l_schem_objs(i).owner, false)
+                  || '.'
+                  || dbms_assert.enquote_name(l_schem_objs(i).name, false)
+                  || ' compile'
+                  || case  
+                        when l_schem_objs(i).type in ('TYPE', 'PACKAGE') then
+                           ' specification'
+                        when l_schem_objs(i).type in ('TYPE BODY', 'PACKAGE BODY') then
+                           ' body'
+                     end
+                  || case 
+                        when g_is_reuse_settings 
+                           and l_schem_objs(i).type not in ( 'VIEW',
+                                  'MATERIALIZED VIEW', 'OPERATOR' ) 
+                        then
+                           compile_settings( 
+                              in_plsql_optimize_level  => l_schem_objs(i).plsql_optimize_level,
+                              in_plsql_code_type       => l_schem_objs(i).plsql_code_type,
+                              in_plsql_debug           => l_schem_objs(i).plsql_debug,
+                              in_plsql_warnings        => l_schem_objs(i).plsql_warnings,
+                              in_plsql_ccflags         => l_schem_objs(i).plsql_ccflags,
+                              in_nls_length_semantics  => l_schem_objs(i).nls_length_semantics,
+                              in_identifiers           => in_identifiers,
+                              in_statements            => in_statements
+                           )
+                     end,
+               in_expected_errors => t_oerrns_type(
+                  co_oerrn_is_not_udt,          /* errors for non user-defined types */
+                  co_oerrn_typ_has_table_deps,  /* type has table dependents */
+                  co_oerrn_lib_has_table_deps,  /* library has table dependents */
+                  co_oerrn_success_with_error,  /* object has compilation errors */
+                  co_oerrn_no_privs             /* insufficient privileges */
+               )
+            );
+         end loop process_schem_objs;
+      end if;
+
+      log_summary;      
+      log_end('Compile schema (' || case when g_is_reuse_settings then
+            'reuse settings' else 'using session settings' end || ')');
+   end recomp_impl;
+
+   procedure set_on_error_raise(in_is_on_error_raise in boolean)
+   is
+   begin
+      g_is_on_error_raise := in_is_on_error_raise;
+   end set_on_error_raise;
+
+   procedure set_reuse_settings(in_is_reuse_settings in boolean)
+   is
+   begin
+      g_is_reuse_settings := in_is_reuse_settings;
+   end set_reuse_settings;
+
+   procedure exec_dyn_stmt(
+      in_stmt              in varchar2,
+      in_expected_errors   in t_oerrns_type
+   )
+   is
+      l_sqlcode pls_integer;
+   begin
+      <<stmt_dyn_exec>>
+      begin
+         execute immediate in_stmt;
+         l_sqlcode := 0;
+      exception
+         when others then
+            <<stmt_failure_handler>>
+            declare
+               l_is_expected_error boolean;
+            begin
+               l_sqlcode := sqlcode;
+               l_is_expected_error := (in_expected_errors is not null
+                                         and l_sqlcode member of in_expected_errors);
+               log_stmt(
+                  in_sqlcode => l_sqlcode, 
+                  in_stmt    => in_stmt, 
+                  in_errmsg  => sqlerrm,
+                  in_status  => case 
+                                   when not l_is_expected_error then
+                                      'UNEXPECTED ERROR'
+                                end
+               );
+               if g_is_on_error_raise and not l_is_expected_error then
+                  raise;
+               end if;
+            end stmt_failure_handler;
+      end stmt_dyn_exec;
+      if l_sqlcode = 0 then
+         log_stmt(l_sqlcode, in_stmt);
+      end if;
+   end exec_dyn_stmt;
+
+   procedure log_init (in_level in pls_integer)
+   is
+   begin
+      if in_level != co_log_level_off then
+         dbms_output.enable(null);
+         g_log_level := in_level;
+      end if;
+   end log_init;
+
+   procedure log_start (in_step_name in varchar2)
+   is
+   begin
+      log(in_step_name || ' -- start');
+      g_log_ind_level := g_log_ind_level + 1;
+   end log_start;
+
+   procedure log_end (in_step_name in varchar2)
+   is
+   begin
+      g_log_ind_level := greatest(0, g_log_ind_level - 1);
+      log(in_step_name || ' -- end');
+      if g_log_ind_level = 0 then
+         log(null);
+      end if;
+   end log_end;
+
+   procedure log (
+      in_msg   in varchar2, 
+      in_level in pls_integer default co_log_level_summary
+   )
+   is
+   begin
+      if g_log_level >= in_level then
+         if in_msg is not null then
+            dbms_output.put_line(rpad(' ', co_log_ind_step * g_log_ind_level, ' ') || in_msg);
+         else
+            dbms_output.new_line;
+         end if;
+      end if;
+   end log;
+
+   procedure log_stmt(
+      in_sqlcode  in pls_integer, 
+      in_stmt     in varchar2,
+      in_errmsg   in varchar2 default null,
+      in_status   in varchar2 default null
+   )
+   is
+   begin
+      if g_errcnt.exists(in_sqlcode) then
+         g_errcnt(in_sqlcode) := g_errcnt(in_sqlcode) + 1;
+      else
+         g_errcnt(in_sqlcode) := 1;
+      end if;
+      if in_sqlcode = 0 then
+         log('SUCCESS: ' || in_stmt, co_log_level_everything);
+      elsif in_status is not null then
+         log(in_status || ': ' || in_stmt);
+         if in_errmsg is not null then
+            log(rpad(' ', co_log_ind_step) || in_errmsg);
+         end if;
+      else
+         log('FAILED: ' || in_stmt, co_log_level_failed_stmt);
+         if in_errmsg is not null then
+            log(rpad(' ', co_log_ind_step) || in_errmsg, co_log_level_failed_stmt);
+         end if;
+      end if;
+   end log_stmt;
+
+   procedure log_summary (in_step_name in varchar2 default null)
+   is
+      l_oerrn oerrn_type;
+      l_cnt_stmt_total pls_integer := 0;
+      l_cnt_stmt_failed pls_integer := 0;
+   begin
+      if in_step_name is not null then
+         log('Step completed: ' || in_step_name);
+      end if;
+      l_oerrn := g_errcnt.first;
+      <<compute_totals>>
+      while l_oerrn is not null loop
+         l_cnt_stmt_total := l_cnt_stmt_total + g_errcnt(l_oerrn);
+         if l_oerrn != 0 then
+            l_cnt_stmt_failed := l_cnt_stmt_failed + g_errcnt(l_oerrn);
+         end if;
+         l_oerrn := g_errcnt.next(l_oerrn);
+      end loop compute_totals;
+      if l_cnt_stmt_total > 0 then
+         log('Count of statements: ' || to_char(l_cnt_stmt_total)
+            || case 
+                  when l_cnt_stmt_failed = 0 then
+                     ' (no failed statement)'
+                  else
+                     ' (' || to_char(l_cnt_stmt_total - l_cnt_stmt_failed) || ' success, '
+                     || to_char(l_cnt_stmt_failed) || ' error'
+                     || case when l_cnt_stmt_failed > 1 then 's' end || ')'
+               end);
+         if l_cnt_stmt_failed > 0 then
+            log('Exception' || case when l_cnt_stmt_failed > 1 then 's' end || ':');
+            l_oerrn := g_errcnt.first;
+            <<error_recap>>
+            while l_oerrn is not null loop
+               if l_oerrn != 0 then
+                  log('  . ORA' || to_char(l_oerrn, 'S00000')
+                     || case l_oerrn
+                           when co_oerrn_is_not_udt then
+                              ' (not a user-defined type)'
+                           when co_oerrn_typ_has_table_deps then
+                              ' (valid type has type or table dependents)'
+                           when co_oerrn_lib_has_table_deps then
+                              ' (library has table dependents)'
+                           when co_oerrn_no_privs then
+                              ' (insufficient privileges)'
+                           when co_oerrn_success_with_error then
+                              ' (success with compilation error)'
+                        end
+                     || ': ' || to_char(g_errcnt(l_oerrn))
+                  );
+               end if;
+               l_oerrn := g_errcnt.next(l_oerrn);
+            end loop error_recap;
+         end if;
+      end if;
+      g_errcnt.delete;
+   end log_summary;
+
+begin
+   main;
 end;
 ]]>
 		</sql>
@@ -252,6 +2230,6 @@ end;
 			<title>Confirmation</title>
 			<prompt>Compilation with PL/Scope completed.</prompt>
 		</confirmation>
-	</item>
+    </item>
 
 </items>
