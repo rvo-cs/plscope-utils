@@ -107,7 +107,7 @@ public class EditorTest extends AbstractJdbcTest{
                            and not (
                                   ref_owner = 'SYS'
                                   and ref_object_type = 'PACKAGE'
-                                  and ref_object_name = 'STANDARD'
+                                  and ref_object_name in ('STANDARD', 'PLITBLM')
                                )
                     """);
             Assertions.assertEquals(expected.size(), actual.size());

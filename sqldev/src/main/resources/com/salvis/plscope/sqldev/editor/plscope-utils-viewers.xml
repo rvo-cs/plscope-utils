@@ -1481,7 +1481,7 @@ select case
    and not (
           refs.owner = 'SYS'
           and refs.object_type = 'PACKAGE'
-          and refs.object_name = 'STANDARD'
+          and refs.object_name in ('STANDARD', 'PLITBLM')
        )
  order by ids.owner, ids.object_type, ids.object_name, ids.line, ids.col
 ]]>
