@@ -31,13 +31,13 @@ public class EditorTest extends AbstractJdbcTest{
             var node = xmlTools.getNode(doc, "/displays/display[name='Identifiers']/queries/query[@minversion=12.2]/sql");
             var query = node.getTextContent()
                     .replaceAll(":OBJECT_OWNER", "user")
-                    .replaceAll(":OBJECT_TYPE", "'plscope-utils-package'")
+                    .replaceAll(":OBJECT_TYPE", "'plscope-utils-package body'")
                     .replaceAll(":OBJECT_NAME", "'ETL'");
             var actual = jdbcTemplate.queryForList(query);
             var expected = jdbcTemplate.queryForList("""
                         select *
                           from plscope_identifiers
-                         where object_type like 'PACKAGE%'
+                         where object_type = 'PACKAGE BODY'
                            and object_name = 'ETL'
                     """);
             Assertions.assertEquals(expected.size(), actual.size());
@@ -48,13 +48,13 @@ public class EditorTest extends AbstractJdbcTest{
             var node = xmlTools.getNode(doc, "/displays/display[name='Identifiers']/queries/query[@minversion=11.1]/sql");
             var query = node.getTextContent()
                     .replaceAll(":OBJECT_OWNER", "user")
-                    .replaceAll(":OBJECT_TYPE", "'plscope-utils-package'")
+                    .replaceAll(":OBJECT_TYPE", "'plscope-utils-package body'")
                     .replaceAll(":OBJECT_NAME", "'ETL'");
             var actual = jdbcTemplate.queryForList(query);
             var expected = jdbcTemplate.queryForList("""
                         select *
                           from plscope_identifiers
-                         where object_type like 'PACKAGE%'
+                         where object_type = 'PACKAGE BODY'
                            and object_name = 'ETL'
                            and usage != 'EXECUTE'
                     """);
@@ -70,13 +70,13 @@ public class EditorTest extends AbstractJdbcTest{
             var node = xmlTools.getNode(doc, "/displays/display[name='Statements']/queries/query[@minversion=12.2]/sql");
             var query = node.getTextContent()
                     .replaceAll(":OBJECT_OWNER", "user")
-                    .replaceAll(":OBJECT_TYPE", "'plscope-utils-package'")
+                    .replaceAll(":OBJECT_TYPE", "'plscope-utils-package body'")
                     .replaceAll(":OBJECT_NAME", "'ETL'");
             var actual = jdbcTemplate.queryForList(query);
             var expected = jdbcTemplate.queryForList("""
                         select *
                           from plscope_statements
-                         where object_type like 'PACKAGE%'
+                         where object_type = 'PACKAGE BODY'
                            and object_name = 'ETL'
                     """);
             Assertions.assertEquals(expected.size(), actual.size());
@@ -91,13 +91,13 @@ public class EditorTest extends AbstractJdbcTest{
             var node = xmlTools.getNode(doc, "/displays/display[name='Uses']/queries/query[@minversion=11.1]/sql");
             var query = node.getTextContent()
                     .replaceAll(":OBJECT_OWNER", "user")
-                    .replaceAll(":OBJECT_TYPE", "'plscope-utils-package'")
+                    .replaceAll(":OBJECT_TYPE", "'plscope-utils-package body'")
                     .replaceAll(":OBJECT_NAME", "'ETL'");
             var actual = jdbcTemplate.queryForList(query);
             var expected = jdbcTemplate.queryForList("""
                         select *
                           from plscope_identifiers
-                         where object_type like 'PACKAGE%'
+                         where object_type = 'PACKAGE BODY'
                            and object_name = 'ETL'
                            and not (
                                   ref_owner = user
@@ -126,11 +126,11 @@ public class EditorTest extends AbstractJdbcTest{
                     .replaceAll(":OBJECT_NAME", "'ETL'");
             var actual = jdbcTemplate.queryForList(query);
             var expected = jdbcTemplate.queryForList("""
-                        select refs.*
+                        select ids.*
                           from plscope_identifiers refs
                           join plscope_identifiers ids
                             on ids.signature = refs.signature
-                         where refs.object_type like 'PACKAGE%'
+                         where refs.object_type = 'PACKAGE'
                            and refs.object_name = 'ETL'
                            and refs.usage = 'DECLARATION'
                            and not (
@@ -151,7 +151,7 @@ public class EditorTest extends AbstractJdbcTest{
             var node = xmlTools.getNode(doc, "/displays/display[name='Table Usages']/queries/query[@minversion=12.2]/sql");
             var query = node.getTextContent()
                     .replaceAll(":OBJECT_OWNER", "user")
-                    .replaceAll(":OBJECT_TYPE", "'plscope-utils-package'")
+                    .replaceAll(":OBJECT_TYPE", "'plscope-utils-package body'")
                     .replaceAll(":OBJECT_NAME", "'ETL'");
             // resolve synonyms as indirect dependencies only (do not resolve table usages in views)
             var extendedQuery = "select * from (" + query + ") where \"Direct dep?\" = 'YES'";
@@ -159,7 +159,7 @@ public class EditorTest extends AbstractJdbcTest{
             var expected = jdbcTemplate.queryForList("""
                         select *
                           from plscope_tab_usage
-                         where object_type like 'PACKAGE%'
+                         where object_type = 'PACKAGE BODY'
                            and object_name = 'ETL'
                            and direct_dependency = 'YES'
                     """);
@@ -175,7 +175,7 @@ public class EditorTest extends AbstractJdbcTest{
             var node = xmlTools.getNode(doc, "/displays/display[name='Column Usages']/queries/query[@minversion=12.2]/sql");
             var query = node.getTextContent()
                     .replaceAll(":OBJECT_OWNER", "user")
-                    .replaceAll(":OBJECT_TYPE", "'plscope-utils-package'")
+                    .replaceAll(":OBJECT_TYPE", "'plscope-utils-package body'")
                     .replaceAll(":OBJECT_NAME", "'ETL'");
             // resolve synonyms as indirect dependencies only (do not resolve table usages in views)
             var extendedQuery = "select * from (" + query + ") where \"Direct dep?\" = 'YES'";
@@ -183,7 +183,7 @@ public class EditorTest extends AbstractJdbcTest{
             var expected = jdbcTemplate.queryForList("""
                         select *
                           from plscope_col_usage
-                         where object_type like 'PACKAGE%'
+                         where object_type = 'PACKAGE BODY'
                            and object_name = 'ETL'
                            and direct_dependency = 'YES'
                     """);

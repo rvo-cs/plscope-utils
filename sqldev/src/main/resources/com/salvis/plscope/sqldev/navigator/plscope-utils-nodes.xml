@@ -37,6 +37,29 @@ select object_name
 		</folder>
 		<node>
 			<icon RSKEY="OracleIcons.PACKAGE" />
+			<childType id="plscope-utils-package body" nodeType="plscope-utils-package-body">
+				<icon RSKEY="OracleIcons.PACKAGE" />
+					<queries>
+						<query>
+							<sql><![CDATA[
+select object_name
+  from (
+          select object_name || ' Body'  as object_name
+            from sys.all_objects
+           where owner = :SCHEMA
+             and object_type = 'PACKAGE BODY'
+             and object_name = :PARENT_NAME
+       )
+]]>
+							</sql>
+						</query>
+					</queries>
+			</childType>
+		</node>
+	</objectType>
+	<objectType connType="Oracle" id="plscope-utils-package-body" weight="">
+		<node>
+			<icon RSKEY="OracleIcons.PACKAGE" />
 		</node>
 	</objectType>
 	<objectType connType="Oracle" id="plscope-utils-procedure" weight="201.2" category="plscope-utils-root">
@@ -83,6 +106,29 @@ select object_name
 				<query minversion="11.1" sharedId="plscope-declarations" />
 			</queries>
 		</folder>
+		<node>
+			<icon RSKEY="OracleIcons.DOMAIN" />
+			<childType id="plscope-utils-type body" nodeType="plscope-utils-type-body">
+				<icon RSKEY="OracleIcons.PACKAGE" />
+					<queries>
+						<query>
+							<sql><![CDATA[
+select object_name
+  from (
+          select object_name || ' Body'  as object_name
+            from sys.all_objects
+           where owner = :SCHEMA
+             and object_type = 'TYPE BODY'
+             and object_name = :PARENT_NAME
+       )
+]]>
+							</sql>
+						</query>
+					</queries>
+			</childType>
+		</node>
+	</objectType>
+	<objectType connType="Oracle" id="plscope-utils-type-body" weight="">
 		<node>
 			<icon RSKEY="OracleIcons.DOMAIN" />
 		</node>
