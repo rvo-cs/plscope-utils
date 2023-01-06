@@ -8,7 +8,7 @@
 	<!-- used sys.all_ instead of dba_ - SQL Developer uses dba_ views, if the connected user has the privileges -->
 	<!-- Use case sensitive result columns including spaces -->
 	<display type="editor" style="null" enable="true" connType="Oracle"
-		objectType="FUNCTION,PACKAGE,PROCEDURE,SYNONYM,TABLE,TRIGGER,TYPE,VIEW,SEQUENCE,plscope-utils-function,plscope-utils-package,plscope-utils-package body,plscope-utils-procedure,plscope-utils-pub-syn,plscope-utils-priv-syn,plscope-utils-table,plscope-utils-trigger,plscope-utils-type,plscope-utils-type body,plscope-utils-view,plscope-utils-sequence">
+		objectType="FUNCTION,PACKAGE,PROCEDURE,SYNONYM,PUBLIC_SYNONYM,TABLE,TRIGGER,TYPE,VIEW,SEQUENCE,plscope-utils-function,plscope-utils-package,plscope-utils-package body,plscope-utils-procedure,plscope-utils-pub-syn,plscope-utils-priv-syn,plscope-utils-table,plscope-utils-trigger,plscope-utils-type,plscope-utils-type body,plscope-utils-view,plscope-utils-sequence">
 		<name><![CDATA[Identifiers]]></name>
 		<description><![CDATA[]]>
 		</description>
@@ -96,7 +96,8 @@ with
                                          'plscope-utils-sequence')
                    then
                       upper(replace(:OBJECT_TYPE, 'plscope-utils-'))
-                   when :OBJECT_TYPE in ('plscope-utils-pub-syn',
+                   when :OBJECT_TYPE in ('PUBLIC_SYNONYM',
+                                         'plscope-utils-pub-syn',
                                          'plscope-utils-priv-syn')
                    then
                       'SYNONYM'
@@ -1490,7 +1491,7 @@ select case
 		</queries>
 	</display>
 	<display type="editor" style="null" enable="true" connType="Oracle"
-		objectType="FUNCTION,PACKAGE,PROCEDURE,SYNONYM,TABLE,TRIGGER,TYPE,VIEW,SEQUENCE,plscope-utils-function,plscope-utils-package,plscope-utils-procedure,plscope-utils-pub-syn,plscope-utils-priv-syn,plscope-utils-table,plscope-utils-trigger,plscope-utils-type,plscope-utils-view,plscope-utils-sequence">
+		objectType="FUNCTION,PACKAGE,PROCEDURE,SYNONYM,PUBLIC_SYNONYM,TABLE,TRIGGER,TYPE,VIEW,SEQUENCE,plscope-utils-function,plscope-utils-package,plscope-utils-procedure,plscope-utils-pub-syn,plscope-utils-priv-syn,plscope-utils-table,plscope-utils-trigger,plscope-utils-type,plscope-utils-view,plscope-utils-sequence">
 		<name><![CDATA[Used by]]></name>
 		<description><![CDATA[]]>
 		</description>
@@ -1528,7 +1529,8 @@ with
                                          'plscope-utils-sequence')
                    then
                       upper(replace(:OBJECT_TYPE, 'plscope-utils-'))
-                   when :OBJECT_TYPE in ('plscope-utils-pub-syn',
+                   when :OBJECT_TYPE in ('PUBLIC_SYNONYM',
+                                         'plscope-utils-pub-syn',
                                          'plscope-utils-priv-syn')
                    then
                       'SYNONYM'
