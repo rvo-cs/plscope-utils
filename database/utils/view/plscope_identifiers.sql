@@ -177,7 +177,7 @@ create or replace view plscope_identifiers as
       -- recursive with clause to extend the list of identifiers with the columns
       -- procedure_name, procedure_scope, name_path, path_len (level), procedure_signature,
       -- parent_statement_type, parent_statement_signature, parent_statement_path_len,
-      -- is_def_child_of_decl
+      -- is_def_child_of_decl, is_in_func_or_proc_decl
       tree (
          owner,
          object_type,
@@ -202,6 +202,7 @@ create or replace view plscope_identifiers as
          parent_statement_signature,
          parent_statement_path_len,
          is_def_child_of_decl,
+         is_in_func_or_proc_decl,
          origin_con_id
       ) as (
          select owner,
@@ -236,6 +237,7 @@ create or replace view plscope_identifiers as
                 cast(null as varchar2(32 char)) as parent_statement_signature,
                 cast(null as number) as parent_statement_path_len,
                 cast(null as varchar2(3 char)) as is_def_child_of_decl,
+                cast(null as varchar2(3 char)) as is_in_func_or_proc_decl,
                 origin_con_id
            from ids
           where usage_context_id = 0  -- top-level identifiers
@@ -361,6 +363,16 @@ create or replace view plscope_identifiers as
                             'NO'
                       end
                 end as is_def_child_of_decl,
+                case
+                   when tree.is_in_func_or_proc_decl is null
+                      and tree.type in ('FUNCTION', 'PROCEDURE')
+                      and tree.usage = 'DECLARATION'
+                      and ids.usage <> 'DEFINITION'
+                   then
+                      'YES'
+                   else
+                      tree.is_in_func_or_proc_decl
+                end as is_in_func_or_proc_decl,
                 ids.origin_con_id
            from tree
            join ids
@@ -451,14 +463,21 @@ create or replace view plscope_identifiers as
              -- Bug 26351814.
              when tree.object_type in ('PACKAGE BODY', 'PROCEDURE', 'FUNCTION', 'TYPE BODY')
                 and tree.usage = 'DECLARATION'
+                and tree.is_in_func_or_proc_decl is null
                 and tree.type not in ('LABEL')
+                and tree.usage_context_id <> 0
              then
                 case
                    when count(
                          case
-                            when tree.usage not in ('DECLARATION', 'ASSIGNMENT')
-                               or (tree.type in ('FORMAL OUT', 'FORMAL IN OUT')
-                                  and tree.usage = 'ASSIGNMENT')
+                            when tree.usage <> 'DECLARATION'
+                               and (tree.usage <> 'ASSIGNMENT'
+                                    or tree.type in ('FORMAL OUT', 'FORMAL IN OUT'))
+                               and (tree.usage <> 'DEFINITION'
+                                    -- PL/Scope may incorrectly report some references to
+                                    -- boolean variables in IF conditions as definitions
+                                    or tree.type in ('VARIABLE',
+                                        'FORMAL IN', 'FORMAL OUT', 'FORMAL IN OUT'))
                             then
                                1
                          end
@@ -477,6 +496,7 @@ create or replace view plscope_identifiers as
           tree.is_fixed_context_id,
           tree.procedure_signature,
           --tree.is_def_child_of_decl,    --uncomment if needed for debugging
+          --tree.is_in_func_or_proc_decl, --uncomment if needed for debugging
           --tree.is_new_proc,             --uncomment if needed for debugging
           case
              when tree.is_new_proc = 'YES' then
