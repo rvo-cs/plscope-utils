@@ -2,6 +2,7 @@ package com.salvis.plscope.sqldev.test;
 
 import org.junit.jupiter.api.*;
 import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -15,6 +16,7 @@ public class ReportTest extends AbstractJdbcTest{
     private static final XMLTools xmlTools = new XMLTools();
     private static final DocumentBuilder docBuilder = xmlTools.createDocumentBuilder();
     private static Document doc;
+    private static final String RE_LINE_COMMENT = "\\n--[^\\n]*";
 
     @BeforeAll
     public static void setup() throws IOException, SAXException {
@@ -23,13 +25,22 @@ public class ReportTest extends AbstractJdbcTest{
         doc = docBuilder.parse(url.openStream());
     }
 
+    public void assertQuerySimilarity(Node sqlNodeAllViews, Node sqlNodeDbaViews) {
+        String sqlTextAllViews = sqlNodeAllViews.getTextContent().replaceAll(RE_LINE_COMMENT, "");
+        String sqlTextDbaViews = sqlNodeDbaViews.getTextContent().replaceAll(RE_LINE_COMMENT, "");
+        Assertions.assertEquals(sqlTextAllViews, sqlTextDbaViews.replaceAll("dba_", "all_"));
+        Assertions.assertEquals(sqlTextAllViews.replaceAll("all_", "dba_"), sqlTextDbaViews);
+    }
+    
     @Nested
     class Duplicate_SQL_Statements {
 
         @Test
         public void query122() {
-            var node = xmlTools.getNode(doc, "/displays/folder/folder/display[name='Duplicate SQL Statements']/query[@minversion='12.2']/sql");
-            var query = node.getTextContent().replaceAll(":[A-Z_]+", "null");
+            var node1 = xmlTools.getNode(doc, "/displays/folder/folder[1]/display[name='Duplicate SQL Statements']/query[@minversion='12.2']/sql");
+            var node2 = xmlTools.getNode(doc, "/displays/folder/folder[2]/display[name='Duplicate SQL Statements']/query[@minversion='12.2']/sql");
+            assertQuerySimilarity(node1, node2);
+            var query = node1.getTextContent().replaceAll(":[A-Z_]+", "null");
             var actual = jdbcTemplate.queryForList(query);
             var expected = jdbcTemplate.queryForList("""
                         select *
@@ -45,8 +56,10 @@ public class ReportTest extends AbstractJdbcTest{
 
         @Test
         public void query122() {
-            var node = xmlTools.getNode(doc, "/displays/folder/folder/display[name='UDF Calls in SQL Statements']/query[@minversion='12.2']/sql");
-            var query = node.getTextContent().replaceAll(":[A-Z_]+", "null");
+            var node1 = xmlTools.getNode(doc, "/displays/folder/folder[1]/display[name='UDF Calls in SQL Statements']/query[@minversion='12.2']/sql");
+            var node2 = xmlTools.getNode(doc, "/displays/folder/folder[2]/display[name='UDF Calls in SQL Statements']/query[@minversion='12.2']/sql");
+            assertQuerySimilarity(node1, node2);
+            var query = node1.getTextContent().replaceAll(":[A-Z_]+", "null");
             var actual = jdbcTemplate.queryForList(query);
             var expected = jdbcTemplate.queryForList("""
                         select *
@@ -69,8 +82,10 @@ public class ReportTest extends AbstractJdbcTest{
 
         @Test
         public void query122() {
-            var node = xmlTools.getNode(doc, "/displays/folder/folder/display[name='CRUD Operations']/query[@minversion='12.2']/sql");
-            var query = node.getTextContent().replaceAll(":[A-Z_]+", "null");
+            var node1 = xmlTools.getNode(doc, "/displays/folder/folder[1]/display[name='CRUD Operations']/query[@minversion='12.2']/sql");
+            var node2 = xmlTools.getNode(doc, "/displays/folder/folder[2]/display[name='CRUD Operations']/query[@minversion='12.2']/sql");
+            assertQuerySimilarity(node1, node2);
+            var query = node1.getTextContent().replaceAll(":[A-Z_]+", "null");
             var actual = jdbcTemplate.queryForList(query);
             var expected = jdbcTemplate.queryForList("""
                         select owner, object_type, object_name, procedure_name, ref_owner, ref_object_type, ref_object_name
@@ -92,8 +107,10 @@ public class ReportTest extends AbstractJdbcTest{
 
         @Test
         public void query122() {
-            var node = xmlTools.getNode(doc, "/displays/folder/folder/display[name='Unused Local Identifiers']/query[@minversion='12.2']/sql");
-            var query = node.getTextContent().replaceAll(":[A-Z_]+", "null");
+            var node1 = xmlTools.getNode(doc, "/displays/folder/folder[1]/display[name='Unused Local Identifiers']/query[@minversion='12.2']/sql");
+            var node2 = xmlTools.getNode(doc, "/displays/folder/folder[2]/display[name='Unused Local Identifiers']/query[@minversion='12.2']/sql");
+            assertQuerySimilarity(node1, node2);
+            var query = node1.getTextContent().replaceAll(":[A-Z_]+", "null");
             var actual = jdbcTemplate.queryForList(query);
             var expected = jdbcTemplate.queryForList("""
                         select *
@@ -106,8 +123,10 @@ public class ReportTest extends AbstractJdbcTest{
 
         @Test
         public void query111() {
-            var node = xmlTools.getNode(doc, "/displays/folder/folder/display[name='Unused Local Identifiers']/query[@minversion='11.1']/sql");
-            var query = node.getTextContent().replaceAll(":[A-Z_]+", "null");
+            var node1 = xmlTools.getNode(doc, "/displays/folder/folder[1]/display[name='Unused Local Identifiers']/query[@minversion='11.1']/sql");
+            var node2 = xmlTools.getNode(doc, "/displays/folder/folder[2]/display[name='Unused Local Identifiers']/query[@minversion='11.1']/sql");
+            assertQuerySimilarity(node1, node2);
+            var query = node1.getTextContent().replaceAll(":[A-Z_]+", "null");
             var actual = jdbcTemplate.queryForList(query);
             var expected = jdbcTemplate.queryForList("""
                         select *
@@ -143,8 +162,10 @@ public class ReportTest extends AbstractJdbcTest{
 
         @Test
         public void query111() {
-            var node = xmlTools.getNode(doc, "/displays/folder/folder/display[name='PL/SQL Naming Conventions']/query[@minversion='11.1']/sql");
-            var query = node.getTextContent()
+            var node1 = xmlTools.getNode(doc, "/displays/folder/folder[1]/display[name='PL/SQL Naming Conventions']/query[@minversion='11.1']/sql");
+            var node2 = xmlTools.getNode(doc, "/displays/folder/folder[2]/display[name='PL/SQL Naming Conventions']/query[@minversion='11.1']/sql");
+            assertQuerySimilarity(node1, node2);
+            var query = node1.getTextContent()
                     .replaceAll(":LOCAL_VARIABLE_REGEX", "'^x_.*'")
                     .replaceAll(":[A-Z_]+", "null");
             var actual = jdbcTemplate.queryForList(query);
