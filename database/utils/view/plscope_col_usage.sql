@@ -21,9 +21,10 @@ create or replace view plscope_col_usage as
                 ids.owner,
                 ids.object_type,
                 ids.object_name,
+                ids.procedure_name,
+                ids.procedure_scope,
                 ids.line,
                 ids.col,
-                ids.procedure_name,
                 case
                    when refs.type is not null then
                       refs.type
@@ -34,7 +35,10 @@ create or replace view plscope_col_usage as
                 ids.ref_object_type,
                 ids.ref_object_name,
                 ids.name as column_name,
-                ids.text
+                ids.text,
+                ids.usage_id,
+                ids.signature,
+                ids.procedure_signature
            from plscope_identifiers ids
            left join sys.dba_statements refs -- NOSONAR: avoid public synonym
              on refs.signature = parent_statement_signature
@@ -45,26 +49,34 @@ create or replace view plscope_col_usage as
          select t.owner,
                 t.object_type,
                 t.object_name,
+                t.procedure_name,
+                t.procedure_scope,
                 t.line,
                 t.col,
-                t.procedure_name,
                 t.operation,
                 t.ref_owner,
                 t.ref_object_type,
                 t.ref_object_name,
                 tc.column_name,
-                t.text
+                t.text,
+                t.usage_id,
+                t.signature,
+                t.procedure_signature
            from ( select tu.owner,
                          tu.object_type,
                          tu.object_name,
+                         tu.procedure_name,
+                         tu.procedure_scope,
                          tu.line,
                          tu.col,
-                         tu.procedure_name,
                          tu.operation,
                          tu.ref_owner,
                          tu.ref_object_type,
                          tu.ref_object_name,
-                         tu.text
+                         tu.text,
+                         tu.usage_id,
+                         tu.signature,
+                         tu.procedure_signature
                     from plscope_tab_usage tu
                     left join sys.dba_tables tab -- NOSONAR: avoid public synonyms
                       on tu.ref_object_type = 'TABLE'
@@ -82,7 +94,7 @@ create or replace view plscope_col_usage as
              on t.owner = c.owner
             and t.object_type = c.object_type
             and t.object_name = c.object_name
-            and t.procedure_name = c.procedure_name
+            and t.procedure_signature = c.procedure_signature
             and t.ref_owner = c.ref_owner
             and t.ref_object_type = c.ref_object_type
             and t.ref_object_name = c.ref_object_name
@@ -95,61 +107,77 @@ create or replace view plscope_col_usage as
          select owner,
                 object_type,
                 object_name,
+                procedure_name,
+                procedure_scope,
                 line,
                 col,
-                procedure_name,
                 operation,
                 ref_owner,
                 ref_object_type,
                 ref_object_name,
                 column_name,
                 'YES' as direct_dependency,
-                text
+                text,
+                usage_id,
+                signature,
+                procedure_signature
            from scope_cols
          union all
          select owner,
                 object_type,
                 object_name,
+                procedure_name,
+                procedure_scope,
                 line,
                 col,
-                procedure_name,
                 operation,
                 ref_owner,
                 ref_object_type,
                 ref_object_name,
                 column_name,
                 'NO' as direct_dependency,
-                text
+                text,
+                usage_id,
+                signature,
+                procedure_signature
            from missing_cols
       )
    select owner,
           object_type,
           object_name,
+          procedure_name,
+          procedure_scope,
           line,
           col,
-          procedure_name,
           operation,
           ref_owner,
           ref_object_type,
           ref_object_name,
           column_name,
           direct_dependency,
-          text
+          text,
+          usage_id,
+          signature,
+          procedure_signature
      from base_cols
    union all
    select c.owner,
           c.object_type,
           c.object_name,
+          c.procedure_name,
+          c.procedure_scope,
           c.line,
           c.col,
-          c.procedure_name,
           c.operation,
           d.owner as ref_owner,
           d.object_type as ref_object_type,
           d.object_name as ref_object_name,
           d.column_name,
           'NO' as direct_dependency,
-          c.text
+          c.text,
+          c.usage_id,
+          c.signature,
+          c.procedure_signature
      from base_cols c
     cross join table(
              lineage_util.get_dep_cols_from_view(

@@ -22,12 +22,16 @@ create or replace view plscope_tab_usage as
                 ids.object_type,
                 ids.object_name,
                 ids.procedure_name,
+                ids.procedure_scope,
                 ids.usage,
                 ids.line,
                 ids.col,
                 ids.ref_owner,
                 ids.ref_object_type,
                 ids.ref_object_name,
+                ids.usage_id,
+                ids.signature,
+                ids.procedure_signature,
                 ids.parent_statement_signature,
                 ids.text
            from plscope_identifiers ids
@@ -141,9 +145,10 @@ create or replace view plscope_tab_usage as
       select ids.owner,
              ids.object_type,
              ids.object_name,
+             ids.procedure_name,
+             ids.procedure_scope,
              ids.line,
              ids.col,
-             ids.procedure_name,
              case
                 when refs.type is not null then
                    refs.type
@@ -161,7 +166,10 @@ create or replace view plscope_tab_usage as
              end as direct_dependency,
              ids.text,
              dep.is_base_object,
-             dep.path_len
+             dep.path_len,
+             ids.usage_id,
+             ids.signature,
+             ids.procedure_signature
         from table_usage_ids ids
         join dep_trans_closure dep
           on dep.owner = ids.ref_owner
