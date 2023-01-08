@@ -1222,12 +1222,14 @@ with
              ids.object_type,
              ids.object_name,
              ids.procedure_name,
+             ids.procedure_scope,
              ids.usage,
              ids.line,
              ids.col,
              ids.ref_owner,
              ids.ref_object_type,
              ids.ref_object_name,
+             ids.procedure_signature,
              ids.parent_statement_signature
         from plscope_identifiers ids
        where ids.type in ('VIEW', 'TABLE', 'SYNONYM')
@@ -1342,9 +1344,10 @@ with
       select ids.owner,
              ids.object_type,
              ids.object_name,
+             ids.procedure_name,
+             ids.procedure_scope,
              ids.line,
              ids.col,
-             ids.procedure_name,
              case
                 when refs.type is not null then
                    refs.type
@@ -1360,7 +1363,8 @@ with
                 else
                    'NO'
              end as direct_dependency,
-             dep.is_base_object
+             dep.is_base_object,
+             ids.procedure_signature
         from table_usage_ids ids
         join dep_trans_closure dep
           on dep.owner = ids.ref_owner
@@ -1393,7 +1397,8 @@ select case
        owner as "Owner",
        object_type as "Object type",
        object_name as "Object name",
-       procedure_name as "Procedure name",
+       max(procedure_name) as "Proc. Name",
+       max(procedure_scope) as "Proc. Scope",
        ref_owner as "Ref Owner",
        ref_object_type "Ref object type",
        ref_object_name "Ref object name",
@@ -1432,12 +1437,13 @@ select case
                  1
               else
                  0
-           end) as "Reference"
+           end) as "Reference",
+       procedure_signature as "Procedure Signature"
   from plscope_tab_usage
  where operation in ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'MERGE', 'REFERENCE')
    and is_base_object = 'YES'
- group by owner, object_type, object_name, procedure_name, ref_owner, ref_object_type, ref_object_name
- order by owner, object_type, object_name, procedure_name, ref_owner, ref_object_type, ref_object_name
+ group by owner, object_name, object_type, procedure_signature, ref_owner, ref_object_type, ref_object_name
+ order by owner, object_name, object_type, max(procedure_name) nulls first, ref_owner, ref_object_type, ref_object_name
 ]]>
                 </sql>
                 <binds>
@@ -2011,12 +2017,16 @@ select case
        owner as "Owner",
        object_type as "Object type",
        object_name as "Object name",
-       procedure_name as "Procedure name",
+       procedure_name as "Proc. Name",
+       procedure_scope as "Proc. Scope",
        type as "Type",
        name as "Name",
        line as "Line",
        col as "Col",
-       text as "Text"
+       text as "Text",
+       usage_id as "Usage Id",
+       signature as "Identifier Signature",
+       procedure_signature as "Procedure Signature"
   from plscope_identifiers
  where usage = 'DECLARATION'
    and is_used = 'NO'
@@ -2536,12 +2546,15 @@ select case
        owner as "Owner",
        object_type as "Object type",
        object_name as "Object name",
-       procedure_name as "Procedure name",
+       procedure_name as "Proc. Name",
+       procedure_scope as "Proc. Scope",
        type as "Type",
        name as "Name",
        line as "Line",
        col as "Col",
-       text as "Text"
+       text as "Text",
+       signature as "Identifier Signature",
+       procedure_signature as "Procedure Signature"
   from plscope_identifiers
  where usage = 'DECLARATION'
    and is_used = 'NO'

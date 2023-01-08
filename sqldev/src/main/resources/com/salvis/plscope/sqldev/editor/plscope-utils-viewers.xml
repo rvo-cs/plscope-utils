@@ -638,6 +638,8 @@ select case
           else
              null
        end as "Link",
+       procedure_name as "Proc. Name",
+       procedure_scope as "Proc. Scope",
        name_usage as "Name (Type, Usage)",
        line as "Line",
        col as "Col",
@@ -645,7 +647,12 @@ select case
        name as "Name",
        type as "Type",
        usage as "Usage",
-       is_used as "Used?"
+       is_used as "Used?",
+       usage_id as "Usage Id",
+       usage_context_id as "Context Id",
+       is_fixed_context_id as "Fixed Ctx Id?",
+       signature as "Identifier Signature",
+       procedure_signature as "Procedure Signature"
   from plscope_identifiers
  order by length(object_type), line, col, path_len
 ]]>
@@ -1212,6 +1219,8 @@ select case
           else
              null
        end as "Link",
+       procedure_name as "Proc. Name",
+       procedure_scope as "Proc. Scope",
        name_usage as "Name (Type, Usage)",
        line as "Line",
        col as "Col",
@@ -1219,7 +1228,12 @@ select case
        name as "Name",
        type as "Type",
        usage as "Usage",
-       is_used as "Used?"
+       is_used as "Used?",
+       usage_id as "Usage Id",
+       usage_context_id as "Context Id",
+       is_fixed_context_id as "Fixed Ctx Id?",
+       signature as "Identifier Signature",
+       procedure_signature as "Procedure Signature"
   from plscope_identifiers
  order by length(object_type), line, col, path_len
 ]]>
@@ -1324,7 +1338,9 @@ select case
        has_current_of as "Has current of?",
        has_for_update as "Has for update?",
        has_in_binds as "Has binds?",
-       full_text as "Text"
+       full_text as "Text",
+       usage_id as "Usage Id",
+       signature as "Identifier Signature"
   from plscope_statements
  order by length(object_type), line, col
 ]]>
@@ -1386,6 +1402,7 @@ with
              object_name,
              signature,
              usage,
+             usage_id,
              type,
              name,
              line,
@@ -1460,7 +1477,9 @@ select case
        ids.name as "Name",
        ids.line as "Line",
        ids.col as "Col",
-       regexp_replace(src.text, chr(10) || '+$', null) as "Text" -- remove trailing new line character
+       regexp_replace(src.text, chr(10) || '+$', null) as "Text", -- remove trailing new line character
+       ids.usage_id as "Usage Id",
+       ids.signature as "Identifier Signature"
   from ids
   join sys.all_identifiers refs
     on ids.signature = refs.signature
@@ -1598,12 +1617,14 @@ select case
        ids.owner as "Owner",
        ids.object_type as "Object type",
        ids.object_name as "Object name",
+       ids.usage_id as "Usage Id",
        ids.usage as "Usage",
        ids.type as "Type",
        ids.name as "Name",
        ids.line as "Line",
        ids.col as "Col",
-       regexp_replace(src.text, chr(10) || '+$', null) as "Text" -- remove trailing new line character
+       regexp_replace(src.text, chr(10) || '+$', null) as "Text", -- remove trailing new line character
+       ids.signature as "Identifier Signature"
   from refs
   join sys.all_identifiers ids
     on ids.signature = refs.signature
@@ -2266,12 +2287,16 @@ with
              ids.object_type,
              ids.object_name,
              ids.procedure_name,
+             ids.procedure_scope,
              ids.usage,
              ids.line,
              ids.col,
              ids.ref_owner,
              ids.ref_object_type,
              ids.ref_object_name,
+             ids.usage_id,
+             ids.signature,
+             ids.procedure_signature,
              ids.parent_statement_signature,
              ids.text
         from plscope_identifiers ids
@@ -2365,9 +2390,10 @@ with
       select ids.owner,
              ids.object_type,
              ids.object_name,
+             ids.procedure_name,
+             ids.procedure_scope,
              ids.line,
              ids.col,
-             ids.procedure_name,
              case
                 when refs.type is not null then
                    refs.type
@@ -2384,7 +2410,10 @@ with
                    'NO'
              end as direct_dependency,
              ids.text,
-             dep.path_len
+             dep.path_len,
+             ids.usage_id,
+             ids.signature,
+             ids.procedure_signature
         from table_usage_ids ids
         join dep_trans_closure dep
           on dep.owner = ids.ref_owner
@@ -2415,7 +2444,8 @@ select
           else
              null
        end as "Link",
-       procedure_name as "Procedure name",
+       procedure_name as "Proc. Name",
+       procedure_scope as "Proc. Scope",
        operation as "Operation",
        direct_dependency as "Direct dep?",
        ref_owner as "Owner",
@@ -2423,7 +2453,10 @@ select
        ref_object_name as "Object name",
        line as "Line",
        col as "Col",
-       text as "Text"
+       text as "Text",
+       usage_id as "Usage Id",
+       signature as "Identifier Signature",
+       procedure_signature as "Procedure Signature"
   from plscope_tab_usage
  order by length(object_type), line, col, path_len
 ]]>
@@ -3032,6 +3065,7 @@ with
              ids.object_type,
              ids.object_name,
              ids.procedure_name,
+             ids.procedure_scope,
              ids.type,
              ids.name,
              ids.usage,
@@ -3040,6 +3074,9 @@ with
              ids.ref_owner,
              ids.ref_object_type,
              ids.ref_object_name,
+             ids.usage_id,
+             ids.signature,
+             ids.procedure_signature,
              ids.parent_statement_signature,
              ids.text,
              ids.path_len
@@ -3157,9 +3194,10 @@ with
       select ids.owner,
              ids.object_type,
              ids.object_name,
+             ids.procedure_name,
+             ids.procedure_scope,
              ids.line,
              ids.col,
-             ids.procedure_name,
              case
                 when refs.type is not null then
                    refs.type
@@ -3177,7 +3215,10 @@ with
              end as direct_dependency,
              ids.text,
              dep.is_base_object,
-             ids.path_len
+             ids.path_len,
+             ids.usage_id,
+             ids.signature,
+             ids.procedure_signature
         from tableorcolumn_usage_ids ids
         join dep_trans_closure dep
           on dep.owner = ids.ref_owner
@@ -3194,9 +3235,10 @@ with
       select ids.owner,
              ids.object_type,
              ids.object_name,
+             ids.procedure_name,
+             ids.procedure_scope,
              ids.line,
              ids.col,
-             ids.procedure_name,
              case
                 when refs.type is not null then
                    refs.type
@@ -3208,7 +3250,10 @@ with
              ids.ref_object_name,
              ids.name as column_name,
              ids.text,
-             ids.path_len
+             ids.path_len,
+             ids.usage_id,
+             ids.signature,
+             ids.procedure_signature
         from tableorcolumn_usage_ids ids
         left join sys.all_statements refs -- NOSONAR: avoid public synonym
           on refs.signature = parent_statement_signature
@@ -3219,28 +3264,36 @@ with
       select t.owner,
              t.object_type,
              t.object_name,
+             t.procedure_name,
+             t.procedure_scope,
              t.line,
              t.col,
-             t.procedure_name,
              t.operation,
              t.ref_owner,
              t.ref_object_type,
              t.ref_object_name,
              tc.column_name,
              t.text,
-             t.path_len
+             t.path_len,
+             t.usage_id,
+             t.signature,
+             t.procedure_signature
         from ( select tu.owner,
                       tu.object_type,
                       tu.object_name,
+                      tu.procedure_name,
+                      tu.procedure_scope,
                       tu.line,
                       tu.col,
-                      tu.procedure_name,
                       tu.operation,
                       tu.ref_owner,
                       tu.ref_object_type,
                       tu.ref_object_name,
                       tu.text,
-                      tu.path_len
+                      tu.path_len,
+                      tu.usage_id,
+                      tu.signature,
+                      tu.procedure_signature
                  from plscope_tab_usage tu
                  left join sys.all_tables tab -- NOSONAR: avoid public synonyms
                    on tu.ref_object_type = 'TABLE'
@@ -3258,7 +3311,7 @@ with
           on t.owner = c.owner
          and t.object_type = c.object_type
          and t.object_name = c.object_name
-         and t.procedure_name = c.procedure_name
+         and t.procedure_signature = c.procedure_signature
          and t.ref_owner = c.ref_owner
          and t.ref_object_type = c.ref_object_type
          and t.ref_object_name = c.ref_object_name
@@ -3271,9 +3324,10 @@ with
       select owner,
              object_type,
              object_name,
+             procedure_name,
+             procedure_scope,
              line,
              col,
-             procedure_name,
              operation,
              ref_owner,
              ref_object_type,
@@ -3281,15 +3335,19 @@ with
              column_name,
              'YES' as direct_dependency,
              text,
-             path_len
+             path_len,
+             usage_id,
+             signature,
+             procedure_signature
         from scope_cols
       union all
       select owner,
              object_type,
              object_name,
+             procedure_name,
+             procedure_scope,
              line,
              col,
-             procedure_name,
              operation,
              ref_owner,
              ref_object_type,
@@ -3297,16 +3355,20 @@ with
              column_name,
              'NO' as direct_dependency,
              text,
-             path_len
+             path_len,
+             usage_id,
+             signature,
+             procedure_signature
         from missing_cols
    ),
    plscope_col_usage as (
       select owner,
              object_type,
              object_name,
+             procedure_name,
+             procedure_scope,
              line,
              col,
-             procedure_name,
              operation,
              ref_owner,
              ref_object_type,
@@ -3314,7 +3376,10 @@ with
              column_name,
              direct_dependency,
              text,
-             path_len
+             path_len,
+             usage_id,
+             signature,
+             procedure_signature
         from base_cols
    )
 select case
@@ -3335,7 +3400,8 @@ select case
           else
              null
        end as "Link",
-       procedure_name as "Procedure name",
+       procedure_name as "Proc. Name",
+       procedure_scope as "Proc. Scope",
        operation as "Operation",
        direct_dependency as "Direct dep?",
        ref_owner "Owner",
@@ -3344,7 +3410,10 @@ select case
        column_name as "Column name",
        line as "Line",
        col as "Col",
-       text as "Text"
+       text as "Text",
+       usage_id as "Usage Id",
+       signature as "Identifier Signature",
+       procedure_signature as "Procedure Signature"
   from plscope_col_usage
  order by length(object_type), line, col, path_len
 ]]>
