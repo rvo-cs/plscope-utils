@@ -86,9 +86,9 @@ create or replace view plscope_identifiers as
                 nvl2(sig.signature, 'PUBLIC', cast(null as varchar2(7 char))) as procedure_scope,
                 pls_ids.origin_con_id
            from pls_ids
-           left join pls_ids sig
+           left join sys.dba_identifiers sig
              on sig.owner = pls_ids.owner
-            and sig.object_type = 'PACKAGE'
+            and sig.object_type in ('PACKAGE', 'TYPE')
             and sig.object_name = pls_ids.object_name
             and sig.usage = 'DECLARATION'
             and sig.signature = pls_ids.signature
@@ -250,7 +250,7 @@ create or replace view plscope_identifiers as
                 case
                    when tree.procedure_name is not null then
                       tree.procedure_name
-                   when ids.object_type in ('PACKAGE', 'PACKAGE BODY')
+                   when ids.object_type in ('PACKAGE', 'PACKAGE BODY', 'TYPE', 'TYPE BODY')
                       and ids.type in ('FUNCTION', 'PROCEDURE')
                       and ids.usage in ('DEFINITION', 'DECLARATION')
                       and ids.usage_context_id = 1
@@ -260,13 +260,13 @@ create or replace view plscope_identifiers as
                 case
                    when tree.procedure_scope is not null then
                       tree.procedure_scope
-                   when ids.object_type = 'PACKAGE'
+                   when ids.object_type in ('PACKAGE', 'TYPE')
                       and ids.type in ('FUNCTION', 'PROCEDURE')
                       and ids.usage = 'DECLARATION'
                       and ids.usage_context_id = 1
                    then
                       'PUBLIC'
-                   when ids.object_type = 'PACKAGE BODY'
+                   when ids.object_type in ('PACKAGE BODY', 'TYPE BODY')
                       and ids.type in ('FUNCTION', 'PROCEDURE')
                       and ids.usage in ('DEFINITION', 'DECLARATION')
                       and ids.usage_context_id = 1
@@ -324,7 +324,7 @@ create or replace view plscope_identifiers as
                 case
                    when tree.procedure_signature is not null then
                       tree.procedure_signature
-                   when ids.object_type in ('PACKAGE', 'PACKAGE BODY')
+                   when ids.object_type in ('PACKAGE', 'PACKAGE BODY', 'TYPE', 'TYPE BODY')
                       and ids.type in ('FUNCTION', 'PROCEDURE')
                       and ids.usage in ('DEFINITION', 'DECLARATION')
                       and ids.usage_context_id = 1
