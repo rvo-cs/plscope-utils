@@ -17,7 +17,7 @@ create or replace package body lineage_util is
    
    subtype fixed_view_name_type is 
       sys.gv_$fixed_view_definition.view_name %type; -- NOSONAR: avoid public synonym
-   type map_fixed_view_names_type is table of pls_integer index by fixed_view_name_type;
+   type t_map_fixed_view_names_type is table of pls_integer index by fixed_view_name_type;
       
    --
    -- global variable recursive, used by get_dep_cols_from_insert
@@ -28,7 +28,7 @@ create or replace package body lineage_util is
    -- global associative array for caching the names of fixed views
    -- (initialized at package init. time, see begin block)
    --
-   g_map_fixed_views map_fixed_view_names_type;
+   g_map_fixed_views t_map_fixed_view_names_type;
 
    --
    -- set_recursive
@@ -401,13 +401,13 @@ begin
    <<get_fixed_view_names>>
    declare
       type t_fixed_view_names_type is table of fixed_view_name_type index by pls_integer;
-      l_fixed_view_names t_fixed_view_names_type;
+      t_fixed_view_names t_fixed_view_names_type;
    begin
-      select fv.view_name bulk collect into l_fixed_view_names
+      select fv.view_name bulk collect into t_fixed_view_names
         from sys.gv_$fixed_view_definition fv; -- NOSONAR: avoid public synonym
-      if l_fixed_view_names.count > 0 then
-         for i in l_fixed_view_names.first .. l_fixed_view_names.last loop
-            g_map_fixed_views(l_fixed_view_names(i)) := 1;
+      if t_fixed_view_names.count > 0 then
+         for i in t_fixed_view_names.first .. t_fixed_view_names.last loop
+            g_map_fixed_views(t_fixed_view_names(i)) := 1;
          end loop;
       end if;
    end get_fixed_view_names;

@@ -47,14 +47,14 @@ create or replace package body dd_util is
 
       -- For loop detection
       subtype qualified_name_type is varchar2(261 char);
-      type map_qualified_name_type is table of pls_integer index by qualified_name_type;
-      l_map_syn_names map_qualified_name_type;
+      type t_map_qualified_names_type is table of pls_integer index by qualified_name_type;
+      t_map_syn_names t_map_qualified_names_type;
       l_qual_syn_name qualified_name_type;
    begin
       o_obj := get_object(in_parse_user => in_parse_user, in_obj => in_obj);
       if o_obj.object_type = 'SYNONYM' then
          l_qual_syn_name := '"' || o_obj.owner || '"."' || o_obj.object_name || '"';
-         l_map_syn_names(l_qual_syn_name) := 1;
+         t_map_syn_names(l_qual_syn_name) := 1;
          <<resolve_syn_chain>>
          while o_obj.object_type = 'SYNONYM' loop
             open c_lookup;
@@ -70,13 +70,13 @@ create or replace package body dd_util is
                o_obj.object_name := null;
             else
                l_qual_syn_name := '"' || o_obj.owner || '"."' || o_obj.object_name || '"';
-               if l_map_syn_names.exists(l_qual_syn_name) then
+               if t_map_syn_names.exists(l_qual_syn_name) then
                   -- synonym loop
                   o_obj.owner := null;
                   o_obj.object_type := null;
                   o_obj.object_name := null;
                else
-                  l_map_syn_names(l_qual_syn_name) := 1;
+                  t_map_syn_names(l_qual_syn_name) := 1;
                end if;
             end if;
             if c_lookup_pubsyn%isopen then
@@ -152,24 +152,24 @@ create or replace package body dd_util is
    ) return t_obj_type is
       o_obj obj_type;
       t_obj t_obj_type := t_obj_type();
-      i     pls_integer;
+      l_idx pls_integer;
    begin
       if in_t_obj is not null and in_t_obj.count > 0 then
          -- in_t_obj could be sparse
-         i := in_t_obj.first;
+         l_idx := in_t_obj.first;
          <<input_objects>>
-         while (i is not null)
+         while (l_idx is not null)
          loop
             o_obj := get_object(
                         in_parse_user => in_parse_user,
-                        in_obj        => in_t_obj(i),
+                        in_obj        => in_t_obj(l_idx),
                         in_namespace  => in_namespace
                      );
             if o_obj.owner is not null then
                t_obj.extend;
                t_obj(t_obj.count) := o_obj;
             end if;
-            i     := in_t_obj.next(i);
+            l_idx := in_t_obj.next(l_idx);
          end loop input_objects;
       end if;
 
