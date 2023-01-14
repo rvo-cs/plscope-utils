@@ -69,6 +69,7 @@ prompt ====================================================================
 
 grant connect                        to &&username;
 grant resource                       to &&username;
+grant create table to &&username;
 grant create view to &&username;
 grant create materialized view to &&username;
 grant create synonym                 to &&username;
