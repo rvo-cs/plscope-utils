@@ -53,13 +53,20 @@ create or replace package body test_dd_util is
       wrap_dyn_exec('create synonym syn_nonexistent for to_be_dropped_t1');
       wrap_dyn_exec('drop table to_be_dropped_t1 purge');
 
+      wrap_dyn_exec(q'{
+            create table test_dd_util_dept (
+               deptno   number(2)     constraint pk_test_dd_util_dept primary key,
+               dname    varchar2(14),
+               loc      varchar2(13)
+            )
+         }');
       <<create_mview>>
       declare
          e_mview_exists exception;
          pragma exception_init(e_mview_exists, -12006);
       begin
-         wrap_dyn_exec(q'[create materialized view mv1 as
-                          select deptno from dept]');
+         wrap_dyn_exec(q'[create materialized view test_dd_util_mv1 as
+                          select deptno from test_dd_util_dept]');
       exception
          when e_mview_exists then
             null;
@@ -74,7 +81,8 @@ create or replace package body test_dd_util is
    --
    procedure teardown is
    begin
-      wrap_dyn_exec('drop materialized view mv1');
+      wrap_dyn_exec('drop materialized view test_dd_util_mv1');
+      wrap_dyn_exec('drop table test_dd_util_dept');
       wrap_dyn_exec('drop synonym syn_nonexistent');
       wrap_dyn_exec('drop synonym syn_loop3');
       wrap_dyn_exec('drop synonym syn_loop2');
@@ -254,10 +262,11 @@ create or replace package body test_dd_util is
    procedure test_get_mview_source is
       o_input    obj_type;
       l_actual   clob;
-      l_expected clob := 'select deptno from dept';
+      l_expected clob := 'select deptno from test_dd_util_dept';
+      l_current_schema user_users.username%type := sys_context('USERENV', 'CURRENT_SCHEMA');
    begin
       -- act
-      o_input  := obj_type(user, 'MATERIALIZED VIEW', 'MV1');
+      o_input  := obj_type(l_current_schema, 'MATERIALIZED VIEW', 'TEST_DD_UTIL_MV1');
       l_actual := dd_util.get_view_source(o_input);      
       -- assert
       ut.expect(l_actual).to_equal(l_expected);
@@ -269,10 +278,11 @@ create or replace package body test_dd_util is
    procedure test_get_table_source is
       o_input  obj_type;
       l_actual clob;
+      l_current_schema user_users.username%type := sys_context('USERENV', 'CURRENT_SCHEMA');
    begin
       -- act
-      o_input  := obj_type(user, 'TABLE', 'DEPT');
-      l_actual := dd_util.get_view_source(o_input);      
+      o_input  := obj_type(l_current_schema, 'TABLE', 'TEST_DD_UTIL_DEPT');
+      l_actual := dd_util.get_view_source(o_input);
       -- assert
       ut.expect(l_actual).to_be_null;
    end test_get_table_source;
