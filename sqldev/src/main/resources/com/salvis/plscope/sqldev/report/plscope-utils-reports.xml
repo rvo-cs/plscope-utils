@@ -2963,7 +2963,7 @@ with
                          'OK'
                       else
                          'Array/table does not match regex "'
-                         || nvl(:ARRAY_REGEX, '^t_.*_type$')
+                         || nvl(:ARRAY_REGEX, '^t_.*_type$|^.*_ct$')
                          || '".'
                    end
                    -- exceptions
@@ -6384,7 +6384,7 @@ with
                          'OK'
                       else
                          'Array/table does not match regex "'
-                         || nvl(:ARRAY_REGEX, '^t_.*_type$')
+                         || nvl(:ARRAY_REGEX, '^t_.*_type$|^.*_ct$')
                          || '".'
                    end
                    -- exceptions

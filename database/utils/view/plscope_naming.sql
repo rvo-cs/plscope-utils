@@ -419,7 +419,7 @@ create or replace view plscope_naming as
                             'OK'
                          else
                             'Array/table does not match regex "'
-                            || nvl(sys_context('PLSCOPE', 'ARRAY_REGEX'), '^t_.*_type$')
+                            || nvl(sys_context('PLSCOPE', 'ARRAY_REGEX'), '^t_.*_type$|^.*_ct$')
                             || '".'
                       end
                       -- exceptions
