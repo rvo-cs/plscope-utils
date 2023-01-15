@@ -22,10 +22,17 @@ create or replace package test_plscope_context authid current_user is
    procedure test_set_attr;
    
    -- %test
+   -- %throws(-20000)
+   procedure test_set_misspelled_attr;
+   
+   -- %test
    procedure test_remove_attr;
 
    -- %test
    procedure test_remove_all;
+   
+   -- %afterall
+   procedure cleanup;
 
 end test_plscope_context;
 /
