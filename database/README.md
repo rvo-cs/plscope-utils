@@ -312,7 +312,7 @@ In Parameter | P: in | ```in_empno``` | ```IN_PARAMETER_REGEX``` | ```^in_.*```
 Out Parameter | P: out | ```out_ename``` | ```OUT_PARAMETER_REGEX``` | ```^out_.*```
 In/Out Parameter | P: io | ```io_employee``` | ```IN_OUT_PARAMETER_REGEX``` | ```^io_.*```
 Record Type | P: r / S: type | ```r_employee_type``` | ```RECORD_REGEX``` | ```^r_.*_type$```
-Array/Table Type | P: t / S: type | ```t_employees_type``` | ```ARRAY_REGEX``` | ```^t_.*_type$``` 
+Array/Table Type | P: t / S: type | ```t_employees_type``` | ```ARRAY_REGEX``` | ```^t_.*_type$\|^.*_ct$``` 
 Exception | P: e | ```e_employee_exists``` | ```EXCEPTION_REGEX``` | ```^e_.*```
 Constant | P: co | ```co_empno``` | ```CONSTANT_REGEX``` | ```^co_.*```
 Subtype | S: type | ```big_string_type``` | ```SUBTYPE_REGEX``` | ```.*_type$```
