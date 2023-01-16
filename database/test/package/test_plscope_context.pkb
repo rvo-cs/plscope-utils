@@ -12,7 +12,7 @@ create or replace package body test_plscope_context is
          ut.expect(l_actual).to_equal(lower(in_name));
       end test_set_valid_attr;
    begin
-      test_set_valid_attr('ARRAY_REGEX');
+      test_set_valid_attr('ARRAY_TYPE_REGEX');
       test_set_valid_attr('CONSTANT_REGEX');
       test_set_valid_attr('CURSOR_PARAMETER_REGEX');
       test_set_valid_attr('CURSOR_REGEX');
@@ -28,7 +28,7 @@ create or replace package body test_plscope_context is
       test_set_valid_attr('OBJECT_TYPE');
       test_set_valid_attr('OUT_PARAMETER_REGEX');
       test_set_valid_attr('OWNER');
-      test_set_valid_attr('RECORD_REGEX');
+      test_set_valid_attr('RECORD_TYPE_REGEX');
       test_set_valid_attr('SUBTYPE_REGEX');
    end test_set_attr;
    

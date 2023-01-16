@@ -2947,11 +2947,11 @@ with
                    and type = 'RECORD'
                 then
                    case
-                      when regexp_like(name, nvl(:RECORD_REGEX, '^r_.*_type$'), 'i') then
+                      when regexp_like(name, nvl(:RECORD_TYPE_REGEX, '^r_.*_type$'), 'i') then
                          'OK'
                       else
                          'Record does not match regex "'
-                         || nvl(:RECORD_REGEX, '^r_.*_type$')
+                         || nvl(:RECORD_TYPE_REGEX, '^r_.*_type$')
                          || '".'
                    end
                    -- arrays/tables
@@ -2959,11 +2959,11 @@ with
                    and type in ('ASSOCIATIVE ARRAY', 'VARRAY', 'INDEX TABLE', 'NESTED TABLE')
                 then
                    case
-                      when regexp_like(name, nvl(:ARRAY_REGEX, '^t_.*_type$|^.*_ct$'), 'i') then
+                      when regexp_like(name, nvl(:ARRAY_TYPE_REGEX, '^t_.*_type$|^.*_ct$'), 'i') then
                          'OK'
                       else
                          'Array/table does not match regex "'
-                         || nvl(:ARRAY_REGEX, '^t_.*_type$|^.*_ct$')
+                         || nvl(:ARRAY_TYPE_REGEX, '^t_.*_type$|^.*_ct$')
                          || '".'
                    end
                    -- exceptions
@@ -3132,15 +3132,15 @@ select case
                         <value><![CDATA[^io_.*]]></value>
                         <bracket><![CDATA[null]]></bracket>
                     </bind>
-                    <bind id="RECORD_REGEX">
-                        <prompt><![CDATA[Record regex]]></prompt>
-                        <tooltip><![CDATA[RECORD_REGEX]]></tooltip>
+                    <bind id="RECORD_TYPE_REGEX">
+                        <prompt><![CDATA[Record type regex]]></prompt>
+                        <tooltip><![CDATA[RECORD_TYPE_REGEX]]></tooltip>
                         <value><![CDATA[^r_.*_type$]]></value>
                         <bracket><![CDATA[null]]></bracket>
                     </bind>
-                    <bind id="ARRAY_REGEX">
-                        <prompt><![CDATA[Array/table regex]]></prompt>
-                        <tooltip><![CDATA[ARRAY_REGEX]]></tooltip>
+                    <bind id="ARRAY_TYPE_REGEX">
+                        <prompt><![CDATA[Array/table type regex]]></prompt>
+                        <tooltip><![CDATA[ARRAY_TYPE_REGEX]]></tooltip>
                         <value><![CDATA[^t_.*_type$|^.*_ct$]]></value>
                         <bracket><![CDATA[null]]></bracket>
                     </bind>
@@ -6368,11 +6368,11 @@ with
                    and type = 'RECORD'
                 then
                    case
-                      when regexp_like(name, nvl(:RECORD_REGEX, '^r_.*_type$'), 'i') then
+                      when regexp_like(name, nvl(:RECORD_TYPE_REGEX, '^r_.*_type$'), 'i') then
                          'OK'
                       else
                          'Record does not match regex "'
-                         || nvl(:RECORD_REGEX, '^r_.*_type$')
+                         || nvl(:RECORD_TYPE_REGEX, '^r_.*_type$')
                          || '".'
                    end
                    -- arrays/tables
@@ -6380,11 +6380,11 @@ with
                    and type in ('ASSOCIATIVE ARRAY', 'VARRAY', 'INDEX TABLE', 'NESTED TABLE')
                 then
                    case
-                      when regexp_like(name, nvl(:ARRAY_REGEX, '^t_.*_type$|^.*_ct$'), 'i') then
+                      when regexp_like(name, nvl(:ARRAY_TYPE_REGEX, '^t_.*_type$|^.*_ct$'), 'i') then
                          'OK'
                       else
                          'Array/table does not match regex "'
-                         || nvl(:ARRAY_REGEX, '^t_.*_type$|^.*_ct$')
+                         || nvl(:ARRAY_TYPE_REGEX, '^t_.*_type$|^.*_ct$')
                          || '".'
                    end
                    -- exceptions
@@ -6553,15 +6553,15 @@ select case
                         <value><![CDATA[^io_.*]]></value>
                         <bracket><![CDATA[null]]></bracket>
                     </bind>
-                    <bind id="RECORD_REGEX">
-                        <prompt><![CDATA[Record regex]]></prompt>
-                        <tooltip><![CDATA[RECORD_REGEX]]></tooltip>
+                    <bind id="RECORD_TYPE_REGEX">
+                        <prompt><![CDATA[Record type regex]]></prompt>
+                        <tooltip><![CDATA[RECORD_TYPE_REGEX]]></tooltip>
                         <value><![CDATA[^r_.*_type$]]></value>
                         <bracket><![CDATA[null]]></bracket>
                     </bind>
-                    <bind id="ARRAY_REGEX">
-                        <prompt><![CDATA[Array/table regex]]></prompt>
-                        <tooltip><![CDATA[ARRAY_REGEX]]></tooltip>
+                    <bind id="ARRAY_TYPE_REGEX">
+                        <prompt><![CDATA[Array/table type regex]]></prompt>
+                        <tooltip><![CDATA[ARRAY_TYPE_REGEX]]></tooltip>
                         <value><![CDATA[^t_.*_type$|^.*_ct$]]></value>
                         <bracket><![CDATA[null]]></bracket>
                     </bind>

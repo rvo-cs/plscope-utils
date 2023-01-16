@@ -50,7 +50,7 @@ create or replace package body plscope_context is
    procedure assert_supported_attr(in_name in varchar2) is
    begin
       case in_name
-         when 'ARRAY_REGEX' then
+         when 'ARRAY_TYPE_REGEX' then
             null;
          when 'CONSTANT_REGEX' then
             null;
@@ -82,7 +82,7 @@ create or replace package body plscope_context is
             null;
          when 'OWNER' then
             null;
-         when 'RECORD_REGEX' then
+         when 'RECORD_TYPE_REGEX' then
             null;
          when 'SUBTYPE_REGEX' then
             null;

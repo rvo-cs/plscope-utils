@@ -31,8 +31,8 @@ create or replace view plscope_naming as
               plscope_context.set_attr('IN_PARAMETER_REGEX',          '(^(in|p)_.*)|(.*_in$)');
               plscope_context.set_attr('OUT_PARAMETER_REGEX',         '(^(out|p)_.*)|(.*_out$)');
               plscope_context.set_attr('IN_OUT_PARAMETER_REGEX',      '(^(io|p)_.*)|(.*_io$)');
-              plscope_context.set_attr('RECORD_REGEX',                '^(r|tp?)_.*');
-              plscope_context.set_attr('ARRAY_REGEX',                 '(^tp?_.*)|(^.*_(type?|l(ist)?|tab(type)?|t(able)?|arr(ay)?|ct|nt|ht)$)');
+              plscope_context.set_attr('RECORD_TYPE_REGEX',           '^(r|tp?)_.*');
+              plscope_context.set_attr('ARRAY_TYPE_REGEX',            '(^tp?_.*)|(^.*_(type?|l(ist)?|tab(type)?|t(able)?|arr(ay)?|ct|nt|ht)$)');
               plscope_context.set_attr('EXCEPTION_REGEX',             '(^ex?_.*)|(.*_exc(eption)?$)');
               plscope_context.set_attr('CONSTANT_REGEX',              '^(co?|gc?|m|l|k)_.*');
               plscope_context.set_attr('SUBTYPE_REGEX',               '(^tp?_.*$)|(.*_type?$)');
@@ -403,11 +403,11 @@ create or replace view plscope_naming as
                       and type = 'RECORD'
                    then
                       case
-                         when regexp_like(name, nvl(sys_context('PLSCOPE', 'RECORD_REGEX'), '^r_.*_type$'), 'i') then
+                         when regexp_like(name, nvl(sys_context('PLSCOPE', 'RECORD_TYPE_REGEX'), '^r_.*_type$'), 'i') then
                             'OK'
                          else
                             'Record does not match regex "'
-                            || nvl(sys_context('PLSCOPE', 'RECORD_REGEX'), '^r_.*_type$')
+                            || nvl(sys_context('PLSCOPE', 'RECORD_TYPE_REGEX'), '^r_.*_type$')
                             || '".'
                       end
                       -- arrays/tables
@@ -415,11 +415,11 @@ create or replace view plscope_naming as
                       and type in ('ASSOCIATIVE ARRAY', 'VARRAY', 'INDEX TABLE', 'NESTED TABLE')
                    then
                       case
-                         when regexp_like(name, nvl(sys_context('PLSCOPE', 'ARRAY_REGEX'), '^t_.*_type$|^.*_ct$'), 'i') then
+                         when regexp_like(name, nvl(sys_context('PLSCOPE', 'ARRAY_TYPE_REGEX'), '^t_.*_type$|^.*_ct$'), 'i') then
                             'OK'
                          else
                             'Array/table does not match regex "'
-                            || nvl(sys_context('PLSCOPE', 'ARRAY_REGEX'), '^t_.*_type$|^.*_ct$')
+                            || nvl(sys_context('PLSCOPE', 'ARRAY_TYPE_REGEX'), '^t_.*_type$|^.*_ct$')
                             || '".'
                       end
                       -- exceptions
