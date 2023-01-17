@@ -68,6 +68,8 @@ create or replace package body plscope_context is
             null;
          when 'LOCAL_ARRAY_VARIABLE_REGEX' then
             null;
+         when 'LOCAL_CURSOR_VARIABLE_REGEX' then
+            null;
          when 'LOCAL_OBJECT_VARIABLE_REGEX' then
             null;
          when 'LOCAL_RECORD_VARIABLE_REGEX' then
@@ -83,6 +85,8 @@ create or replace package body plscope_context is
          when 'OWNER' then
             null;
          when 'RECORD_TYPE_REGEX' then
+            null;
+         when 'REFCURSOR_TYPE_REGEX' then
             null;
          when 'SUBTYPE_REGEX' then
             null;

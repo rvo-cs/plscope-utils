@@ -21,6 +21,7 @@ create or replace package body test_plscope_context is
       test_set_valid_attr('IN_OUT_PARAMETER_REGEX');
       test_set_valid_attr('IN_PARAMETER_REGEX');
       test_set_valid_attr('LOCAL_ARRAY_VARIABLE_REGEX');
+      test_set_valid_attr('LOCAL_CURSOR_VARIABLE_REGEX');
       test_set_valid_attr('LOCAL_OBJECT_VARIABLE_REGEX');
       test_set_valid_attr('LOCAL_RECORD_VARIABLE_REGEX');
       test_set_valid_attr('LOCAL_VARIABLE_REGEX');
@@ -29,6 +30,7 @@ create or replace package body test_plscope_context is
       test_set_valid_attr('OUT_PARAMETER_REGEX');
       test_set_valid_attr('OWNER');
       test_set_valid_attr('RECORD_TYPE_REGEX');
+      test_set_valid_attr('REFCURSOR_TYPE_REGEX');
       test_set_valid_attr('SUBTYPE_REGEX');
    end test_set_attr;
    

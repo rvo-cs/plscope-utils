@@ -25,7 +25,9 @@ create or replace view plscope_naming as
               plscope_context.set_attr('LOCAL_RECORD_VARIABLE_REGEX', '^(r|l|v)_.*');
               plscope_context.set_attr('LOCAL_ARRAY_VARIABLE_REGEX',  '^(t|l|v)_.*');
               plscope_context.set_attr('LOCAL_OBJECT_VARIABLE_REGEX', '^(o|l|v)_.*');
-              plscope_context.set_attr('LOCAL_VARIABLE_REGEX',        '(^(l|v|c)_.*)|(^[ij]$)');
+              plscope_context.set_attr('LOCAL_CURSOR_VARIABLE_REGEX', '^(cv?|l|v)_.*');
+              plscope_context.set_attr('LOCAL_VARIABLE_REGEX',        '(^(l|v)_.*)|(^[ij]$)');
+              plscope_context.set_attr('REFCURSOR_TYPE_REGEX',        '(^tp?_.*$)|(^(g|l)?t_.*_(rcur|refc)$)');
               plscope_context.set_attr('CURSOR_REGEX',                '^(c|l)_.*');
               plscope_context.set_attr('CURSOR_PARAMETER_REGEX',      '(^(p|in|out|io)_.*)|(.*_(in|out|io)$)');
               plscope_context.set_attr('IN_PARAMETER_REGEX',          '(^(in|p)_.*)|(.*_in$)');
@@ -314,6 +316,24 @@ create or replace view plscope_naming as
                             || nvl(sys_context('PLSCOPE', 'LOCAL_OBJECT_VARIABLE_REGEX'), '^o_.*')
                             || '".'
                       end
+                      -- local cursor variables
+                   when parent_usage = 'DECLARATION'
+                      and parent_type = 'VARIABLE'
+                      and usage = 'REFERENCE'
+                      and type = 'REFCURSOR'
+                      and object_type != 'TYPE'
+                      and not regexp_like(type_path, '/(RECORD ITERATOR|RECORD|OBJECT)/VARIABLE/[A-Z0-9_ ]*$')
+                   then
+                      case
+                         when regexp_like(parent_name, nvl(sys_context('PLSCOPE', 'LOCAL_CURSOR_VARIABLE_REGEX'), '^c_.*'),
+                            'i')
+                         then
+                            'OK'
+                         else
+                            'Local cursor variable does not match regex "'
+                            || nvl(sys_context('PLSCOPE', 'LOCAL_CURSOR_VARIABLE_REGEX'), '^c_.*')
+                            || '".'
+                      end
                       -- local variables for other types
                    when parent_usage = 'DECLARATION'
                       and parent_type = 'VARIABLE'
@@ -322,15 +342,27 @@ create or replace view plscope_naming as
                       and not regexp_like(type_path, '/(RECORD ITERATOR|RECORD|OBJECT)/VARIABLE/[A-Z0-9_ ]*$')
                    then
                       case
-                         when regexp_like(parent_name, nvl(sys_context('PLSCOPE', 'LOCAL_VARIABLE_REGEX'), '^(l|c)_.*'), 'i')
+                         when regexp_like(parent_name, nvl(sys_context('PLSCOPE', 'LOCAL_VARIABLE_REGEX'), '^l_.*'), 'i')
                          then
                             'OK'
                          else
                             'Local variable does not match regex "'
-                            || nvl(sys_context('PLSCOPE', 'LOCAL_VARIABLE_REGEX'), '^(l|c)_.*')
+                            || nvl(sys_context('PLSCOPE', 'LOCAL_VARIABLE_REGEX'), '^l_.*')
                             || '".'
                       end
-                      -- cursors
+                      -- Ref cursor types
+                   when usage = 'DECLARATION'
+                      and type = 'REFCURSOR'
+                   then
+                      case
+                         when regexp_like(name, nvl(sys_context('PLSCOPE', 'REFCURSOR_TYPE_REGEX'), '^c_.*_type$'), 'i') then
+                            'OK'
+                         else
+                            'Refcursor type does not match regex "'
+                            || nvl(sys_context('PLSCOPE', 'REFCURSOR_TYPE_REGEX'), '^c_.*_type$')
+                            || '".'
+                      end
+                      -- explicit cursors
                    when usage = 'DECLARATION'
                       and type = 'CURSOR'
                    then

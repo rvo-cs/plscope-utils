@@ -304,6 +304,7 @@ Identifier Group | (P)refix / (S)uffix | Example | Session Context Attribute | D
 Global Variable | P: g | ```g_version``` | ```GLOBAL_VARIABLE_REGEX``` | ```^g_.*```
 Local Record Variable | P: r | ```r_employee``` | ```LOCAL_RECORD_VARIABLE_REGEX``` | ```^r_.*```
 Local Array/Table Variable | P: t | ```t_employees``` | ```LOCAL_ARRAY_VARIABLE_REGEX``` | ```^t_.*```
+Local Cursor Variable| P: c | ```c_employees``` | ```LOCAL_CURSOR_VARIABLE_REGEX``` | ```^c_.*```
 Local Object Variable| P: o | ```o_employee``` | ```LOCAL_OBJECT_VARIABLE_REGEX``` | ```^o_.*```
 Other Local Variable | P: l | ```l_version``` | ```LOCAL_VARIABLE_REGEX``` | ```^l_.*```
 Cursor | P: c | ```c_employees``` | ```CURSOR_REGEX``` | ```^c_.*```
@@ -313,6 +314,7 @@ Out Parameter | P: out | ```out_ename``` | ```OUT_PARAMETER_REGEX``` | ```^out_.
 In/Out Parameter | P: io | ```io_employee``` | ```IN_OUT_PARAMETER_REGEX``` | ```^io_.*```
 Record Type | P: r / S: type | ```r_employee_type``` | ```RECORD_TYPE_REGEX``` | ```^r_.*_type$```
 Array/Table Type | P: t / S: type | ```t_employees_type``` | ```ARRAY_TYPE_REGEX``` | ```^t_.*_type$\|^.*_ct$``` 
+Ref Cursor Type | P: c / S: type | ```c_employees_type``` | ```REFCURSOR_TYPE_REGEX``` | ```^c_.*_type$```
 Exception | P: e | ```e_employee_exists``` | ```EXCEPTION_REGEX``` | ```^e_.*```
 Constant | P: co | ```co_empno``` | ```CONSTANT_REGEX``` | ```^co_.*```
 Subtype | S: type | ```big_string_type``` | ```SUBTYPE_REGEX``` | ```.*_type$```
