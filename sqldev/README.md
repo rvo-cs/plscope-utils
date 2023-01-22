@@ -1,15 +1,15 @@
-# plscope-utils for SQL Developer<br/>SQL Developer Extension
+# SQL Developer Extension: plscope-utils for SQL Developer
 
 ## Introduction
 
-The **plscope-utils** SQL Developer extension simplifies common source code analysis tasks; it is based on PL/Scope, and provides:
+The **plscope-utils for SQL Developer** extension simplifies common source code analysis tasks; it is based on PL/Scope, and provides:
 
 - A "PL/Scope" node under each schema in the Connections tree
 - A "Compile with PL/Scope..." context menu entry in the Connections tree
 - Viewers for tables, views, packages, procedures, functions, triggers, types, and synonyms; these viewers are reachable via the appropriate nodes in the Connections tree, or via the "Popup Describe" context menu, when positioned on an identifier in a PL/SQL editor.
 - A "plscope-utils Reports" folder in the Reports tree.
 
-All operations are based on objects readily available in the Oracle Database, in version 11.1 or higher; no database object needs to be created for using this extension. However, many queries require the `ALL_STATEMENTS` view, available since Oracle Database version 12.2.
+All operations are based on objects readily available in the Oracle Database, version 11.1 or higher. No database object needs to be created for using this extension. Meanwhile, many queries require the `ALL_STATEMENTS` view, available since version 12.2 of the Oracle Database.
 
 ## Examples
 
