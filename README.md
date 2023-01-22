@@ -13,11 +13,11 @@ plscope-utils is based on PL/Scope which is available in the Oracle Database sin
 
 - [Core Database Objects](/database/README.md)
 
-	Provides relational views and PL/SQL packages to simplify common source code analysis tasks. Requires a server side installation.
+	Provides relational views and PL/SQL packages to simplify common source code analysis tasks. Requires a server-side installation.
 
-- [SQL Developer Extension (plscope-utils for SQL Developer)](/sqldev/README.md)
+- [SQL Developer Extension: plscope-utils for SQL Developer](/sqldev/README.md)
 
-   Extends SQL Developer by a ```PL/Scope``` node in the database navigator tree, context menus, views shown for tables, views and PL/SQL nodes and some reports. Requires a client side installation only.
+   An extension for SQL Developer, providing "PL/Scope" nodes in the Connections tree, context menus, and viewers for tables, views, and PL/SQL nodes; plus some reports. Does not require any server-side installation.
 
 ## Releases
 
