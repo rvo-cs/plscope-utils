@@ -42,9 +42,9 @@ All operations are based on objects readily available in the Oracle Database, ve
 
 ### Compile with PL/Scope
 
-In the Connections tree, right-click on the target connection node, then choose "Compile with PL/Scope..." in the menu to run the action on the schema of that connection's user account.
+In the Connections tree, right-click on the target connection node, then choose "Compile with PL/Scope..." in the menu, in order to open the action's dialog; the connection's user account will be used to run the action, and as the action's target.
 
-Alternatively, navigate to the "PL/Scope" node of the target schema, right-click on that node, then choose "Compile with PL/Scope..." in the context menu.
+Alternatively, navigate to the "PL/Scope" node of the target schema, right-click on that node, then choose "Compile with PL/Scope..." in the context menu. The user account of the parent connection node will be used to run the action, whereas the parent schema of the "PL/Scope" node will be its target. 
 
 ![Context Menu](images/plscope-utils-context-menu.png)
 
@@ -56,7 +56,7 @@ The action dialog has PL/Scope settings preset for an Oracle Database in version
 
 The following screenshots show the available viewers for child nodes of the "PL/Scope" node.
 
-Each viewer has a column named "Link"; click on links in this column to open a PL/SQL editor at the specified cursor position.
+Each viewer has a column named "Link"; click on links in that column to open a PL/SQL editor in the specified object / cursor position.
 
 #### Identifiers
 
