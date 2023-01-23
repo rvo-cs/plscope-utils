@@ -11,21 +11,52 @@ The **plscope-utils for SQL Developer** extension simplifies common source code 
 
 All operations are based on objects readily available in the Oracle Database, version 11.1 or higher. No database object needs to be created for using this extension. Meanwhile, many queries require the `ALL_STATEMENTS` view, available since version 12.2 of the Oracle Database.
 
+## ToC
+
+* [Introduction](#introduction)
+* [Examples](#examples)
+    * [Compile with PL/Scope](#compile-with-plscope)
+    * [PL/Scope Node Viewers](#plscope-node-viewers)
+      	* [Identifiers](#identifiers)
+      	* [Statements](#statements)
+      	* [Uses](#uses)
+      	* [Used By](#used-by)
+      	* [Table Usages](#table-usages)
+      	* [Column Usages](#column-usages)
+    * [plscope-utils Reports](#plscope-utils-reports)
+      	* [CRUD Operations](#crud-operations)
+      	* [Duplicate SQL Statements](#duplicate-sql-statements)
+      	* [PL/SQL Naming Conventions](#plsql-naming-conventions)
+      	* [Synonyms with/wo PL/Scope](#synonyms-withwo-plscope)
+      	* [UDF Calls in SQL Statements](#udf-calls-in-sql-statements)
+      	* [Unused Local Identifiers](#unused-local-identifiers)
+* [Prerequisites](#prerequisites)
+* [How to Build](#how-to-build)
+* [Installation](#installation)
+    * [From File](#from-file)
+    * [Via Update Center](#via-update-center)
+* [License](#license)
+
+
 ## Examples
 
 ### Compile with PL/Scope
 
-Right click on the `Connection` or `PL/Scope` node in the Connection window to show the `Compile with PL/Scope` popup window.
+In the Connections tree, right-click on the target connection node, then choose "Compile with PL/Scope..." in the menu to run the action on the schema of that connection's user account.
+
+Alternatively, navigate to the "PL/Scope" node of the target schema, right-click on that node, then choose "Compile with PL/Scope..." in the context menu.
 
 ![Context Menu](images/plscope-utils-context-menu.png)
 
-The popup windows provides all relevant options for the Oracle Database version 12.2. However, if you are connected to an older version, just the applicable options are applied.
+The action dialog has PL/Scope settings preset for an Oracle Database in version 12.2 or higher. If you are connected to an older version, settings which do not apply to your version will be ignored.
 
 ![Compile with PL/Scope](images/plscope-utils-compile-with-plscope.png)
 
-### Viewers PL/Scope Node
+### PL/Scope Node Viewers
 
-The following screenshots show the available viewers for objects within the PL/Scope node. Every viewer has a column named `Link`. Click on this link to open the PL/SQL editor at the corresponding cursor position.
+The following screenshots show the available viewers for child nodes of the "PL/Scope" node.
+
+Each viewer has a column named "Link"; click on links in this column to open a PL/SQL editor at the specified cursor position.
 
 #### Identifiers
 
@@ -41,6 +72,8 @@ The following screenshots show the available viewers for objects within the PL/S
 
 #### Used by
 
+Remark: this viewer is not available for type/package bodies.
+
 ![Used by](images/plscope-utils-4-used-by.png)
 
 #### Table Usages
@@ -51,13 +84,22 @@ The following screenshots show the available viewers for objects within the PL/S
 
 ![Column Usages](images/plscope-utils-6-column-usages.png)
 
-### Reports
+### plscope-utils Reports
 
-In the Reports window you find the `plscope-utils Reports` folder.
+This extension adds the "plscope-utils Reports" folder in the Reports tree.
 
 ![Reports](images/plscope-utils-reports.png)
 
-The following screenshots show an example for every report.
+The reports are put in 3 sub-folders:
+   * 01 – Reports using ALL views
+   * 02 – Reports using DBA views
+   * 03 – Reports for DBAs
+
+Reports in sub-folders "01" and "02" are identical, except that ALL_xxx views are used in the "01" sub-folder, as opposed to DBA_xxx views in the "02" sub-folder. Hence you should always use the "02" sub-folder if possible, unless you're only interested in analyzing your own schema, or if you don't have enough privileges on DBA_xxx views. [^1]
+
+[^1]: Reports in the "03 – Reports for DBAs" sub-folder, which require DBA privileges, will only be useful (if ever) to PL/Scope experts, and may  safely be ignored otherwise.
+
+The following screenshots show an example of every report.
 
 #### CRUD Operations
 
@@ -73,6 +115,10 @@ The following screenshots show an example for every report.
 
 ![PL/SQL Naming Conventions](images/plscope-utils-plsql-naming-conventions-report.png)
 
+#### Synonyms with/wo PL/Scope
+
+![Synonyms with/wo PL/Scope](images/plscope-utils-synonyms-wt-wo-plscope.png)
+
 #### UDF Calls in SQL Statements
 
 ![UDF Calls in SQL Statments](images/plscope-utils-udf-calls-in-sql-statements-report.png)
@@ -83,7 +129,7 @@ The following screenshots show an example for every report.
 
 ## Prerequisites
 
-* Oracle Database 11.1 or higher
+* Oracle Database ≥ 11.1, preferrably ≥ 12.2 due to enhancements in that version
 * Oracle SQL Developer 4.0 or higher
 
 ## How to Build
@@ -105,6 +151,14 @@ The following screenshots show an example for every report.
 
 ## Installation
 
+### From File
+
+1. Start SQL Developer
+
+2. Select ```Check for Updates…``` in the help menu.
+
+3. Use the ```Install From Local File``` option to install the previously downloaded ```plscope-utils_for_SQLDev_*.zip``` file.
+
 ### Via Update Center
 
 1. Start SQL Developer
@@ -119,14 +173,8 @@ The following screenshots show an example for every report.
 
 If you have troubles to configure the proxy settings, because your company requires some additional authentication or similar, then I suggest to download plscope-utils for SQL Developer from [here](https://github.com/PhilippSalvisberg/plscope-utils/releases) and use the `Install From Local File` option as described below.
 
-### From file
-
-1. Start SQL Developer
-
-2. Select ```Check for Updates…``` in the help menu.
-
-3. Use the ```Install From Local File``` option to install the previously downloaded ```plscope-utils_for_SQLDev_*.zip``` file.
-
 ## License
 
-plscope-utils is licensed under the Apache License, Version 2.0. You may obtain a copy of the License at <http://www.apache.org/licenses/LICENSE-2.0>.
+plscope-utils is licensed under the Apache License, Version 2.0.
+
+You may obtain a copy of the License at <http://www.apache.org/licenses/LICENSE-2.0>.
