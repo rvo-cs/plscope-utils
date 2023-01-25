@@ -1,11 +1,26 @@
 # plscope-utils - Core Database Objects
 
 ## Introduction
-This component of plscope-utils provides relational views and PL/SQL packages based on PL/Scope to simplify common source code analysis tasks.
+This component of plscope-utils provides relational views and PL/SQL packages based on PL/Scope to simplify common source code analysis tasks.
+
+## ToC
+
+* [Prerequisites](#prerequisites)
+* [Installation](#installation)
+* [Usage](#usage)
+    * [Compile with PL/Scope](#compile-with-plscope)
+    * [Set Session Context (optional)](#set-session-context-optional)
+    * [View PLSCOPE\_IDENTIFIERS](#view-plscope_identifiers)
+    * [View PLSCOPE\_STATEMENTS](#view-plscope_statements)
+    * [View PLSCOPE\_TAB\_USAGE](#view-plscope_tab_usage)
+    * [View PLSCOPE\_COL\_USAGE](#view-plscope_col_usage)
+    * [View PLSCOPE\_NAMING](#view-plscope_naming)
+    * [View PLSCOPE\_INS\_LINEAGE](#view-plscope_ins_lineage)
+* [License](#license) 
 
 ## Prerequisites
 
-* Oracle Database 12.2.0.1 or higher
+* Oracle Database 12.2 or higher
 * Oracle client (SQL*Plus, SQLcl or SQL Developer) to connect to the database
 
 ## Installation
@@ -15,37 +30,38 @@ This component of plscope-utils provides relational views and PL/SQL packages ba
 2. Open a terminal window and change to the directory containing this README.md file
 
     ```
-    cd (...)
+    cd /path_to/plscope-utils/database
     ```
 
-3. Create an oracle user for the plscope-utils database objects. The default username and password is ```plscope```.
-   * optionally change username, password and tablespace in the installation script [database/utils/user/plscope.sql](utils/user/plscope.sql)
+3. Create an oracle account to own the plscope-utils database objects. The default username is ```PLSCOPE``` (password: ```plscope```).
 
-   * connect as sys to the target database
+   * Optional: change username, password, and tablespace in the installation script: [utils/user/plscope.sql](utils/user/plscope.sql)
+
+   * Connect as SYS to the target database:
 
         ```
         sqlplus / as sysdba
         ```
 
-   * execute the script [database/utils/user/plscope.sql](utils/user/plscope.sql)
+   * Execute the script [utils/user/plscope.sql](utils/user/plscope.sql)
 
         ```
-        @database/utils/user/plscope.sql
+        @utils/user/plscope.sql
         exit
         ```
 
-4. Install plscope-utils
+4. Install plscope-utils objects
 
-   * connect to the plscope-utils user created in the previous step
+   * Connect as the user created in the previous step
 
         ```
         sqlplus plscope/plscope
         ```
 
-   * execute the script [database/install.sql](install.sql)
+   * Execute the script [install.sql](install.sql)
 
         ```
-        @database/install.sql
+        @install.sql
         exit
         ```
 
@@ -61,7 +77,7 @@ alter session set plscope_settings = 'identifiers:all, statements:all';
 
 #### Create/compile a procedure
 
-The following example is based on demo [tables](demo/table) installed by plscope-utils.
+The following example is based on [demo tables](demo/table) installed by plscope-utils.
 
 ```sql
 create or replace procedure load_from_tab is
@@ -483,8 +499,9 @@ PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE
 15 rows selected. 
 ```
 
-#### Result (after calling ```EXEC lineage_util.set_recursive(0);```)
+#### Result (recursion disabled)
 
+Recursive resolution of view columns may be disabled by calling: ```lineage_util.set_recursive(0);```
 ```
 OWNER   OBJECT_TYPE  OBJECT_NAME   LINE  COL PROCEDURE_NAME     FROM_OWNER FROM_OBJECT_TYPE FROM_OBJECT_NAME FROM_COLUMN_NAME TO_OWNER TO_OBJECT_TYPE TO_OBJECT_NAME TO_COLUMN_NAME
 ------- ------------ ------------- ---- ---- ------------------ ---------- ---------------- ---------------- ---------------- -------- -------------- -------------- --------------
@@ -505,4 +522,6 @@ PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE
 
 ## License
 
-plscope-utils is licensed under the Apache License, Version 2.0. You may obtain a copy of the License at <http://www.apache.org/licenses/LICENSE-2.0>.
+plscope-utils is licensed under the Apache License, Version 2.0.
+
+You may obtain a copy of the License at <http://www.apache.org/licenses/LICENSE-2.0>.
