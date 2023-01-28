@@ -151,35 +151,36 @@ exec plscope_context.set_attr('OBJECT_NAME', 'APEX_UTIL_PKG');
 
 ### [View PLSCOPE\_IDENTIFIERS](utils/view/plscope_identifiers.sql)
 
-This view combines the ```dba_identifiers```, ```dba_statements``` and ```dba_source``` views. It provides all columns from ```dba_identifiers``` plus the following:
+This view combines the ```dba_identifiers```, ```dba_statements``` and ```dba_source``` views. It provides all columns from ```dba_identifiers``` [^1] plus the following:
 
 Column Name           | Description
 --------------------- | -------------
 ```procedure_name```  | Name of the top-level function/procedure in a PL/SQL package or type; same as ```object_name``` for standalone procedures and functions
 ```procedure_scope``` | ```PRIVATE``` or ```PUBLIC``` scope of a function/procedure in a PL/SQL package or type; children inherit the procedure scope.
-```name_usage```      | Name of the identifier, along with its type and usage, as a single column; indented according to context in order to represent the hierarchy of contexts/usages of identifiers
+```name_usage```      | Name of the identifier, along with its type and usage, as a single column; the value is indented according to context, in order to represent the hierarchy of contexts/usages of identifiers
 ```name_path```       | Path formed by identifiers in the hierarchy, from the root identifier down to and including the present identifier
 ```path_len```        | Hierarchy level of the identifier (number of forward slashes in ```name_path```)
 ```module_name```     | In a procedure or function _definition_, the name of the present procedure or function, along with (if any) the names of all its parent procedures/functions down from the top-level routine, separated by dot (.) characters  
-```ref_owner```       | ```owner``` of the object referenced by the ```signature``` column
-```ref_object_type``` | ```object_type``` of the object referenced by the ```signature``` column
-```ref_object_name``` | ```object_name``` of the object referenced by the ```signature``` column
-```text``` | ```text``` of the referenced source code line
-```parent_statement_type``` | ```type``` of the parent statement (```NULL``` if parent is not a SQL statement)
-```parent_statement_signature``` | ```signature``` of the parent statement (```NULL``` if parent is not a SQL statement)
-```parent_statement_path_len``` | ```path_len``` of the parent statement (```NULL``` if parent is not a SQL statement)
-```is_used``` | Applies only to locally-declared identifiers (except labels) in stand-alone procedures/functions, package bodies, or type bodies; always ```NULL``` otherwise [^1] . The value is ```YES``` if the identifier is referenced locally, ```NO``` if it is only declared, but not referenced [^2] ; ```NULL``` if not applicable
-```is_fixed_context_id``` | ```YES``` if the ```usage_context_id``` column has been updated in order to fix the context hierarchy due to missing identifier(s) [^3] , ```NULL``` otherwise
+```ref_owner```       | ```owner``` of the object in which the referenced identifier is declared
+```ref_object_type``` | ```object_type``` of the object in which the referenced identifier is declared
+```ref_object_name``` | ```object_name``` of the object in which the referenced identifier is declared
+```text``` | ```text``` of the source code line where this identifier's usage is located  
+```parent_statement_type``` | ```type``` of the parent statement (```NULL``` if the parent is not a SQL statement)
+```parent_statement_signature``` | ```signature``` of the parent statement (```NULL``` if the parent is not a SQL statement)
+```parent_statement_path_len``` | ```path_len``` of the parent statement (```NULL``` if the parent is not a SQL statement)
+```is_used``` | Applies only to locally-declared identifiers (except labels) in stand-alone procedures/functions, package bodies, or type bodies; always ```NULL``` otherwise [^2] . The value is ```YES``` if the identifier is referenced locally, ```NO``` if it is only declared, but not referenced [^3] ; ```NULL``` if not applicable
+```is_fixed_context_id``` | ```YES``` if the ```usage_context_id``` column has been updated in order to fix the context hierarchy due to missing identifier(s) [^4] , ```NULL``` otherwise
 ```procedure_signature```  | Signature of the top-level function/procedure in a PL/SQL package or type; see ```procedure_name```, ```procedure_scope```
 ```proc_ends_before_line```<br/>```proc_ends_before_col```| These 2 columns provide with an upper bound for the position in the source code where the current top-level procedure/function ends: the last token in that routine is _strictly_ before that
-```ref_line```<br/>```ref_col``` | Position (line, column) where the identifier referenced by the ```signature``` column is declared
+```ref_line```<br/>```ref_col``` | Position (line, column) where the identifier is declared, in the object (owner: ```ref_owner```, name: ```ref_object_name```) in which it is declared
 
+[^1]: As of Oracle Database, version 12.2.
 
-[^1]: In particular, ```plscope_identifiers.is_used``` is always ```NULL``` for public declarations in package or type specifications.
+[^2]: In particular, ```plscope_identifiers.is_used``` is always ```NULL``` for public declarations in package or type specifications.
 
-[^2]: Basically, the aim is that such unused identifiers could be removed, in principle.
+[^3]: Basically, the aim is that such unused identifiers could be removed, in principle.
 
-[^3]: See Philipp Salvisberg's blog, 2017-10-14: [Limitations of PL/Scope and How to Deal with Them](https://www.salvis.com/blog/2017/10/14/limitations-of-plscope-and-how-to-deal-with-them/), section 2. Broken Usage Hierarchy.
+[^4]: See Philipp Salvisberg's blog, 2017-10-14: [Limitations of PL/Scope and How to Deal with Them](https://www.salvis.com/blog/2017/10/14/limitations-of-plscope-and-how-to-deal-with-them/), section 2. Broken Usage Hierarchy.
 
 #### Query
 
