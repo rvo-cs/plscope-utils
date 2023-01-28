@@ -25,7 +25,7 @@ This component of plscope-utils provides relational views and PL/SQL packages ba
 
 ## Installation
 
-1. Clone or download this repository. Extract the downloaded zip file, if you have chosen the download option.
+1. Clone or download this repository; expand the downloaded zip file, if you have chosen the download option.
 
 2. Open a terminal window and change to the directory containing this README.md file
 
@@ -123,10 +123,12 @@ This view combines the ```dba_identifiers```, ```dba_statements``` and ```dba_so
 
 Column Name           | Description
 --------------------- | -------------
-```procedure_name```  | Name of the function/procedure in a PL/SQL package (same as ```object_name``` for standalone procedures and functions)
-```procedure_scope```| ```PRIVATE``` or ```PUBLIC``` scope of a function/procedure in a PL/SQL package, children inherit the procedure scope.
-```name_path```       | Context of the identifier represented as path
+```procedure_name```  | Name of the top-level function/procedure in a PL/SQL package or type; same as ```object_name``` for standalone procedures and functions
+```procedure_scope``` | ```PRIVATE``` or ```PUBLIC``` scope of a function/procedure in a PL/SQL package or type; children inherit the procedure scope.
+```name_usage```      | Name of the identifier, along with its type and usage, as a single column; indented according to context in order to represent the hierarchy of contexts/usages of identifiers
+```name_path```       | Path formed by identifiers in the hierarchy, from the root identifier down to and including the present identifier
 ```path_len```        | Hierarchy level of the identifier (number of forward slashes in ```name_path```)
+```module_name```     | In a procedure or function _definition_, the name of the present procedure or function, along with (if any) the names of all its parent procedures/functions down from the top-level unit, separated by dot (.) characters  
 ```ref_owner```       | ```owner``` of the object referenced by the ```signature``` column
 ```ref_object_type``` | ```object_type``` of the object referenced by the ```signature``` column
 ```ref_object_name``` | ```object_name``` of the object referenced by the ```signature``` column
@@ -134,7 +136,10 @@ Column Name           | Description
 ```parent_statement_type``` | ```type``` of the parent statement (```NULL``` if parent is not a SQL statement)
 ```parent_statement_signature``` | ```signature``` of the parent statement (```NULL``` if parent is not a SQL statement)
 ```parent_statement_path_len``` | ```path_len``` of the parent statement (```NULL``` if parent is not a SQL statement)
-```is_used``` | ```YES``` if a declared identifier has been referenced, otherwise ```NO```. ```NULL``` when ```is_used``` is not applicable for an identifier (e.g. SQL statements).
+```is_used``` | Applies only to locally-declared identifiers (except labels) in stand-alone procedures/functions, package bodies, or type bodies; always ```NULL``` otherwise [^1]. The value is ```YES``` if the identifier is referenced locally, ```NO``` if it is only declared, but not referenced [^2]; ```NULL``` if not applicable.
+
+[^1]: In particular, ```plscope_identifiers.is_used``` is always ```NULL``` for public declarations in package or type specifications.
+[^2]: Basically, the aim is that such unused identifiers could be removed, in principle.
 
 #### Query
 
