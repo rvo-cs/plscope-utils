@@ -9,7 +9,7 @@
 If you're looking for the official **plscope-utils** project from Philipp Salvisberg, please see _[this link](https://github.com/PhilippSalvisberg/plscope-utils)_.
 
 ## Introduction
-**plscope-utils** is a set of tools using PL/Scope [^1], intended to make it easier to use. It consists of the following 2 components:
+**plscope-utils** is a set of tools using PL/Scope [^1] , intended to make it easier to use. It consists of the following 2 components:
 
 - [Core Database Objects](/database/README.md)
 
