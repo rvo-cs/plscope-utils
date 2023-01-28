@@ -239,9 +239,9 @@ LOAD_FROM_TAB      14    4     COMMIT statement                          COMMIT 
 
 ### [View PLSCOPE\_STATEMENTS](utils/view/plscope_statements.sql)
 
-This view is based on the ```dba_statements``` view and adds a ```is_duplicate``` column.
+This view is based on the ```dba_statements``` view, and adds the ```is_duplicate``` column.
 
-The [etl](demo/package/etl.pkb) package body contains various variants to load the ```deptsal``` target table. And the reported duplicate insert statement is used there as well.
+The [ETL](demo/package/etl.pkb) package body contains various variants to load the ```deptsal``` target table. And the reported duplicate insert statement is used there as well.
 
 #### Query
 
