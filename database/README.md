@@ -67,6 +67,36 @@ This component of plscope-utils provides relational views and PL/SQL packages ba
         exit
         ```
 
+Remark: public synonyms will be created (or replaced) for plscope-utils core views, and helper PL/SQL packages.
+
+<details><summary>List of public synonyms—click to expand</summary>
+<p/>
+   
+```sql
+select owner, synonym_name, table_owner, table_name
+  from dba_synonyms
+ where owner = 'PUBLIC'
+   and table_owner = 'PLSCOPE'
+ order by table_owner, table_name;
+```
+```
+OWNER     SYNONYM_NAME           TABLE_OWNER    TABLE_NAME
+--------- ---------------------- -------------- ----------------------
+PUBLIC    DD_UTIL                PLSCOPE        DD_UTIL                
+PUBLIC    LINEAGE_UTIL           PLSCOPE        LINEAGE_UTIL           
+PUBLIC    PARSE_UTIL             PLSCOPE        PARSE_UTIL             
+PUBLIC    PLSCOPE_COL_USAGE      PLSCOPE        PLSCOPE_COL_USAGE      
+PUBLIC    PLSCOPE_CONTEXT        PLSCOPE        PLSCOPE_CONTEXT        
+PUBLIC    PLSCOPE_IDENTIFIERS    PLSCOPE        PLSCOPE_IDENTIFIERS    
+PUBLIC    PLSCOPE_INS_LINEAGE    PLSCOPE        PLSCOPE_INS_LINEAGE    
+PUBLIC    PLSCOPE_NAMING         PLSCOPE        PLSCOPE_NAMING         
+PUBLIC    PLSCOPE_STATEMENTS     PLSCOPE        PLSCOPE_STATEMENTS     
+PUBLIC    PLSCOPE_TAB_USAGE      PLSCOPE        PLSCOPE_TAB_USAGE      
+PUBLIC    TYPE_UTIL              PLSCOPE        TYPE_UTIL              
+```
+
+</details>
+
 ## Usage
 
 ### Compile with PL/Scope
@@ -609,12 +639,13 @@ Grantee            | Object Privilege   | Object Owner   | Object Name          
 #### Other Privileges
    
 The following Host Access Control Entry is added:
-```
+```sql
 select host, privilege, grant_type,
        principal, principal_type, inverted_principal
   from dba_host_aces
  where principal = 'PLSCOPE';
-   
+```
+```
 HOST   PRIVILEGE    GRANT_TYPE   PRINCIPAL    PRINCIPAL_TYPE  INVERTED_PRINCIPAL    
 ------ ------------ ------------ ------------ --------------- ------------------ 
 *      JDWP         GRANT        PLSCOPE      DATABASE        NO                    
