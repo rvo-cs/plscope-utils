@@ -138,8 +138,8 @@ Column Name           | Description
 ```parent_statement_type``` | ```type``` of the parent statement (```NULL``` if parent is not a SQL statement)
 ```parent_statement_signature``` | ```signature``` of the parent statement (```NULL``` if parent is not a SQL statement)
 ```parent_statement_path_len``` | ```path_len``` of the parent statement (```NULL``` if parent is not a SQL statement)
-```is_used``` | Applies only to locally-declared identifiers (except labels) in stand-alone procedures/functions, package bodies, or type bodies; always ```NULL``` otherwise [^1]. The value is ```YES``` if the identifier is referenced locally, ```NO``` if it is only declared, but not referenced [^2], ```NULL``` if not applicable
-```is_fixed_context_id``` | ```YES``` if the ```usage_context_id``` column has been updated in order to fix the context hierarchy due to missing identifier(s) [^3], ```NULL``` otherwise
+```is_used``` | Applies only to locally-declared identifiers (except labels) in stand-alone procedures/functions, package bodies, or type bodies; always ```NULL``` otherwise [^1] . The value is ```YES``` if the identifier is referenced locally, ```NO``` if it is only declared, but not referenced [^2] ; ```NULL``` if not applicable
+```is_fixed_context_id``` | ```YES``` if the ```usage_context_id``` column has been updated in order to fix the context hierarchy due to missing identifier(s) [^3] , ```NULL``` otherwise
 ```procedure_signature```  | Signature of the top-level function/procedure in a PL/SQL package or type; see ```procedure_name```, ```procedure_scope```
 ```proc_ends_before_line```<br/>```proc_ends_before_col```| These 2 columns provide with an upper bound for the position in the source code where the current top-level procedure/function ends: the last token in that routine is _strictly_ before that
 ```ref_line```<br/>```ref_col``` | Position (line, column) where the identifier referenced by the ```signature``` column is declared
