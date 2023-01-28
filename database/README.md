@@ -237,7 +237,7 @@ LINE  COL TYPE      SQL_ID        IS_DUPLICATE FULL_TEXT
 
 This view reports table usages. It is based on the views ```dba_tables```, ```dba_dependencies``` and ```plscope_identifiers```. Targets of synonyms and views are resolved, and reported with a ```NO``` in the ```direct_dependency``` column.
 
-The ```is_base_object``` column is ```YES``` if the referenced table/view is the first object, when resolving synonyms, which is not itself a synonym. Otherwise that column is ```NULL```.
+The ```is_base_object``` column is ```YES``` if the referenced table/view is the first object, when resolving synonyms, which is not itself a synonym; otherwise that column is ```NULL```.
 
 #### Query
 
