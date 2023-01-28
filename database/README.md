@@ -539,6 +539,58 @@ PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE
 11 rows selected. 
 ```
 
+## Security Information
+
+This section provides information about roles and privileges pertaining to the ```PLSCOPE``` account, and plscope-utils core database objects.
+
+### Roles and Privileges of the ```PLSCOPE``` Account
+
+The ```PLSCOPE``` account is a highly privileged account. 
+
+#### Role Grants
+
+Grantee            | Granted Role                  | Default Role? | With Admin Option?
+:----------------- | :-----------------------------| :-----------: | :-------:
+```PLSCOPE```      | CONNECT                       | Yes           | No
+```PLSCOPE```      | RESOURCE                      | Yes           | No
+```PLSCOPE```      | SELECT_CATALOG_ROLE           | Yes           | No
+
+#### System Privilege Grants
+
+Grantee            | Privilege                     | With Admin Option?
+:----------------- | :---------------------------- | :-------:
+```PLSCOPE```      | CREATE ANY CONTEXT            | No
+```PLSCOPE```      | CREATE MATERIALIZED VIEW      | No
+```PLSCOPE```      | CREATE PUBLIC SYNONYM         | No
+```PLSCOPE```      | CREATE SYNONYM                | No
+```PLSCOPE```      | CREATE TABLE                  | No
+```PLSCOPE```      | CREATE VIEW                   | No
+```PLSCOPE```      | DEBUG ANY PROCEDURE           | No
+```PLSCOPE```      | DEBUG CONNECT SESSION         | No
+```PLSCOPE```      | DROP ANY CONTEXT              | No
+```PLSCOPE```      | DROP PUBLIC SYNONYM           | No
+```PLSCOPE```      | SELECT ANY DICTIONARY         | No
+```PLSCOPE```      | UNLIMITED TABLESPACE          | No
+
+#### Object Privilege Grants
+
+Grantee            | Object Privilege   | Object Owner   | Object Name             | Object Type  | Grantable?
+:----------------- | :----------------- | :------------- | :---------------------- | :----------- | :----------- 
+```PLSCOPE```      | EXECUTE            | ```SYS```      | ```UTL_XML_LIB```       | Library      | No
+```PLSCOPE```      | EXECUTE            | ```SYS```      | ```DBMS_DEBUG_JDWP```   | Package      | No
+```PLSCOPE```      | EXECUTE            | ```SYS```      | ```UTL_XML```           | Package      | No
+```PLSCOPE```      | SELECT             | ```SYS```      | ```DBA_DEPENDENCIES```  | View         | Yes
+```PLSCOPE```      | SELECT             | ```SYS```      | ```DBA_IDENTIFIERS```   | View         | Yes
+```PLSCOPE```      | SELECT             | ```SYS```      | ```DBA_MVIEWS```        | View         | Yes
+```PLSCOPE```      | SELECT             | ```SYS```      | ```DBA_OBJECTS```       | View         | Yes
+```PLSCOPE```      | SELECT             | ```SYS```      | ```DBA_SOURCE```        | View         | Yes
+```PLSCOPE```      | SELECT             | ```SYS```      | ```DBA_STATEMENTS```    | View         | Yes
+```PLSCOPE```      | SELECT             | ```SYS```      | ```DBA_SYNONYMS```      | View         | Yes
+```PLSCOPE```      | SELECT             | ```SYS```      | ```DBA_TABLES```        | View         | Yes
+```PLSCOPE```      | SELECT             | ```SYS```      | ```DBA_TAB_COLUMNS```   | View         | Yes
+```PLSCOPE```      | SELECT             | ```SYS```      | ```DBA_VIEWS```         | View         | Yes
+```PLSCOPE```      | SELECT             | ```SYS```      | ```V_$MYSTAT```         | View         | No
+
 ## License
 
 plscope-utils is licensed under the Apache License, Version 2.0.
