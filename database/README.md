@@ -139,7 +139,7 @@ OWNER | ```USER``` | ```owner LIKE nvl(sys_context('PLSCOPE', 'OWNER'), USER)```
 OBJECT_TYPE | ```%``` | ```object_type LIKE nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')```
 OBJECT_NAME | ```%``` | ```object_name LIKE nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')```
 
-The filter is applied in the views as early as possible to improve runtime performance. You may set the ```OWNER``` attribute to ```%``` and filter the owner in the where clause, e.g. to analyse several schemas in one go. 
+These filters are applied as early as possible in the views, to improve runtime performance. You may set the ```OWNER``` attribute to ```%``` and filter the owner in the where clause, e.g. to analyse several schemas in one go. 
 
 Here's an example to set the context to a chosen PL/SQL package of the [Alexandria PL/SQL Utility Library](https://github.com/mortenbra/alexandria-plsql-utils):
 
