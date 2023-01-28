@@ -128,7 +128,7 @@ Column Name           | Description
 ```name_usage```      | Name of the identifier, along with its type and usage, as a single column; indented according to context in order to represent the hierarchy of contexts/usages of identifiers
 ```name_path```       | Path formed by identifiers in the hierarchy, from the root identifier down to and including the present identifier
 ```path_len```        | Hierarchy level of the identifier (number of forward slashes in ```name_path```)
-```module_name```     | In a procedure or function _definition_, the name of the present procedure or function, along with (if any) the names of all its parent procedures/functions down from the top-level unit, separated by dot (.) characters  
+```module_name```     | In a procedure or function _definition_, the name of the present procedure or function, along with (if any) the names of all its parent procedures/functions down from the top-level routine, separated by dot (.) characters  
 ```ref_owner```       | ```owner``` of the object referenced by the ```signature``` column
 ```ref_object_type``` | ```object_type``` of the object referenced by the ```signature``` column
 ```ref_object_name``` | ```object_name``` of the object referenced by the ```signature``` column
