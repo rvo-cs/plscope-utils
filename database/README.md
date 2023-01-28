@@ -16,6 +16,7 @@ This component of plscope-utils provides relational views and PL/SQL packages ba
     * [View PLSCOPE\_COL\_USAGE](#view-plscope_col_usage)
     * [View PLSCOPE\_NAMING](#view-plscope_naming)
     * [View PLSCOPE\_INS\_LINEAGE](#view-plscope_ins_lineage)
+* [Security Information](#security-information) 
 * [License](#license) 
 
 ## Prerequisites
@@ -49,6 +50,7 @@ This component of plscope-utils provides relational views and PL/SQL packages ba
         @utils/user/plscope.sql
         exit
         ```
+        Remark: for details about privileges and roles granted to the plscope-utils owner account, please see the [Security Information](#security-information) section. 
 
 4. Install plscope-utils objects
 
@@ -543,9 +545,21 @@ PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE
 
 This section provides information about roles and privileges pertaining to the ```PLSCOPE``` account, and plscope-utils core database objects.
 
+Remark: sites with security requirements may consider restricting access to the ```PLSCOPE``` account, and grant access to core database objects on a _need-to-know_ basis.
+
+<details><summary>Full details here—click to expand</summary>
+
+#### Section ToC
+   
+* [Roles and Privileges of the ```PLSCOPE``` Account](#roles-and-privileges-of-the-plscope-account)
+    * [Role Grants](#role-grants)
+    * [System Privilege Grants](#system-privilege-grants)
+    * [Object Privilege Grants](#object-privilege-grants)
+* [Grants on plscope-utils Core Database Objects](#grants-on-plscope-utils-core-database-objects)
+
 ### Roles and Privileges of the ```PLSCOPE``` Account
 
-The ```PLSCOPE``` account is a highly privileged account. 
+   The ```PLSCOPE``` account is a highly privileged account. 
 
 #### Role Grants
 
@@ -590,6 +604,26 @@ Grantee            | Object Privilege   | Object Owner   | Object Name          
 ```PLSCOPE```      | SELECT             | ```SYS```      | ```DBA_TAB_COLUMNS```   | View         | Yes
 ```PLSCOPE```      | SELECT             | ```SYS```      | ```DBA_VIEWS```         | View         | Yes
 ```PLSCOPE```      | SELECT             | ```SYS```      | ```V_$MYSTAT```         | View         | No
+
+### Grants on plscope-utils Core Database Objects
+
+Privileges on plscope-utils core database objects are granted to ```PUBLIC```.
+   
+Grantee	          | Object Privilege	 | Object Owner	| Object Type	 | Object Name	              | Grantable?
+:----------------- | :----------------- | :------------- | :------------ | :------------------------ | :--------:
+```PUBLIC```	    | EXECUTE	          | ```PLSCOPE```	| Package	    | ```DD_UTIL```	           | No
+```PUBLIC```	    | EXECUTE	          | ```PLSCOPE```	| Package	    | ```LINEAGE_UTIL```        | No
+```PUBLIC```	    | EXECUTE	          | ```PLSCOPE```	| Package	    | ```PARSE_UTIL```	        | No
+```PUBLIC```	    | EXECUTE	          | ```PLSCOPE```	| Package	    | ```PLSCOPE_CONTEXT```     | No
+```PUBLIC```	    | EXECUTE	          | ```PLSCOPE```	| Package	    | ```TYPE_UTIL```           | No
+```PUBLIC```	    | SELECT	          | ```PLSCOPE```	| View	       | ```PLSCOPE_COL_USAGE```	  | No
+```PUBLIC```	    | SELECT	          | ```PLSCOPE```	| View	       | ```PLSCOPE_IDENTIFIERS``` | No
+```PUBLIC```	    | SELECT	          | ```PLSCOPE```	| View	       | ```PLSCOPE_INS_LINEAGE``` | No
+```PUBLIC```	    | SELECT	          | ```PLSCOPE```	| View	       | ```PLSCOPE_NAMING```	     | No
+```PUBLIC```	    | SELECT	          | ```PLSCOPE```	| View	       | ```PLSCOPE_STATEMENTS```  | No
+```PUBLIC```	    | SELECT	          | ```PLSCOPE```	| View	       | ```PLSCOPE_TAB_USAGE```	  | No
+   
+</details>
 
 ## License
 
