@@ -235,7 +235,9 @@ LINE  COL TYPE      SQL_ID        IS_DUPLICATE FULL_TEXT
 
 ### [View PLSCOPE\_TAB\_USAGE](utils/view/plscope_tab_usage.sql)
 
-This view reports table usages. It is based on the views ```dba_tables```, ```dba_dependencies``` and ```plscope_identifiers```. Targets of synonyms and views are resolved, and reported with a ```NO``` in the ```direct_dependency``` column.
+This view reports table usages. It is based on the views ```dba_tables```, ```dba_dependencies``` and ```plscope_identifiers```.
+
+Targets of synonyms, and views' underlying tables or views, are resolved, and reported with a ```NO``` in the ```direct_dependency``` column.
 
 The ```is_base_object``` column is ```YES``` if the referenced table/view is the first object, when resolving synonyms, which is not itself a synonym; otherwise that column is ```NULL```.
 
@@ -270,7 +272,9 @@ PLSCOPE PROCEDURE    LOAD_FROM_TAB   LOAD_FROM_TAB        PUBLIC              9 
 
 ### [View PLSCOPE\_COL\_USAGE](utils/view/plscope_col_usage.sql)
 
-This view reports column usages. It is based on the views ```plscope_identifiers```, ```plscope_tab_usage```, ```dba_synonyms```, ```dba_objects``` and ```dba_tab_columns```. Column-less table/view/synonym accesses are resolved and reporteded with a ```NO``` in the column ```DIRECT_DEPENDENCY```.
+This view reports column usages. It is based on the views ```plscope_identifiers```, ```plscope_tab_usage```, ```dba_synonyms```, ```dba_objects``` and ```dba_tab_columns```.
+
+Column-less table/view/synonym accesses are resolved, and reported with a ```NO``` in the ```direct_dependency``` column.
 
 #### Query
 
