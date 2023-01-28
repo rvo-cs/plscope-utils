@@ -28,7 +28,7 @@ This component of plscope-utils provides relational views and PL/SQL packages ba
 
 1. Clone or download this repository; expand the downloaded zip file, if you have chosen the download option.
 
-2. Open a terminal window and change to the directory containing this README.md file
+2. Open a terminal window, and change to the directory containing this README.md file
 
     ```
     cd /path_to/plscope-utils/database
@@ -555,6 +555,7 @@ Remark: sites with security requirements may consider restricting access to the 
     * [Role Grants](#role-grants)
     * [System Privilege Grants](#system-privilege-grants)
     * [Object Privilege Grants](#object-privilege-grants)
+    * [Other Privileges](#other-privileges)
 * [Grants on plscope-utils Core Database Objects](#grants-on-plscope-utils-core-database-objects)
 
 ### Roles and Privileges of the ```PLSCOPE``` Account
@@ -605,6 +606,20 @@ Grantee            | Object Privilege   | Object Owner   | Object Name          
 ```PLSCOPE```      | SELECT             | ```SYS```      | ```DBA_VIEWS```         | View         | Yes
 ```PLSCOPE```      | SELECT             | ```SYS```      | ```V_$MYSTAT```         | View         | No
 
+#### Other Privileges
+   
+The following Host Access Control Entry is added:
+```
+select host, privilege, grant_type,
+       principal, principal_type, inverted_principal
+  from dba_host_aces
+ where principal = 'PLSCOPE';
+   
+HOST   PRIVILEGE    GRANT_TYPE   PRINCIPAL    PRINCIPAL_TYPE  INVERTED_PRINCIPAL    
+------ ------------ ------------ ------------ --------------- ------------------ 
+*      JDWP         GRANT        PLSCOPE      DATABASE        NO                    
+```
+   
 ### Grants on plscope-utils Core Database Objects
 
 Privileges on plscope-utils core database objects are granted to ```PUBLIC```.
