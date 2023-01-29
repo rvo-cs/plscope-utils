@@ -22,7 +22,7 @@ This component of plscope-utils provides relational views and PL/SQL packages ba
 ## Prerequisites
 
 * Oracle Database 12.2 or higher
-* Oracle client (SQL*Plus, SQLcl or SQL Developer) to connect to the database
+* Oracle client (SQL\*Plus, SQLcl or SQL Developer) to connect to the database
 
 ## Installation
 
@@ -151,7 +151,7 @@ exec plscope_context.set_attr('OBJECT_NAME', 'APEX_UTIL_PKG');
 
 ### [View PLSCOPE\_IDENTIFIERS](utils/view/plscope_identifiers.sql)
 
-This view combines the ```dba_identifiers```, ```dba_statements``` and ```dba_source``` views. It provides all columns from ```dba_identifiers``` [^1] plus the following:
+This view combines the ```DBA_IDENTIFIERS```, ```DBA_STATEMENTS```, and ```DBA_SOURCE``` views. It provides all columns from ```DBA_IDENTIFIERS``` [^1] plus the following:
 
 Column Name           | Description
 --------------------- | -------------
@@ -174,9 +174,9 @@ Column Name           | Description
 ```proc_ends_before_line```<br/>```proc_ends_before_col```| These 2 columns provide with an upper bound for the position in the source code where the current top-level procedure/function ends: the last token in that routine is _strictly_ before that position
 ```ref_line```<br/>```ref_col``` | Position (line, column) where the referenced identifier is declared, in the object (with owner ```ref_owner```, and name ```ref_object_name```) in which it is declared
 
-[^1]: Some newer columns, added to the ```dba_identifiers``` view in releases 18.1 and 19.1, are not yet available in the ```plscope_identifiers``` view.  
+[^1]: Some newer columns, added to the ```DBA_IDENTIFIERS``` view in releases 18.1 and 19.1, are not yet available in the ```PLSCOPE_IDENTIFIERS``` view.  
 
-[^2]: In particular, ```plscope_identifiers.is_used``` is always ```NULL``` for public declarations in package or type specifications.
+[^2]: In particular, ```PLSCOPE_IDENTIFIERS.is_used``` is always ```NULL``` for public declarations in package or type specifications.
 
 [^3]: Basically, the aim is that such unused identifiers could be removed, in principle.
 
@@ -239,9 +239,9 @@ LOAD_FROM_TAB      14    4     COMMIT statement                          COMMIT 
 
 ### [View PLSCOPE\_STATEMENTS](utils/view/plscope_statements.sql)
 
-This view is based on the ```dba_statements``` view, and adds the ```is_duplicate``` column.
+This view is based on the ```DBA_STATEMENTS``` view, and adds the ```is_duplicate``` column.
 
-The [ETL](demo/package/etl.pkb) package body contains various variants to load the ```deptsal``` target table. And the reported duplicate insert statement is used there as well.
+The [ETL](demo/package/etl.pkb) package body contains various variants to load the ```DEPTSAL``` target table. And the reported duplicate INSERT statement is used there as well.
 
 #### Query
 
@@ -268,7 +268,7 @@ LINE  COL TYPE      SQL_ID        IS_DUPLICATE FULL_TEXT
 
 ### [View PLSCOPE\_TAB\_USAGE](utils/view/plscope_tab_usage.sql)
 
-This view reports table usages. It is based on the views ```dba_tables```, ```dba_dependencies``` and ```plscope_identifiers```.
+This view reports table usages. It is based on the views ```DBA_TABLES```, ```DBA_DEPENDENCIES```, and ```PLSCOPE_IDENTIFIERS```.
 
 Targets of synonyms, and views' underlying tables or views, are resolved, and reported with a ```NO``` in the ```direct_dependency``` column.
 
@@ -305,7 +305,7 @@ PLSCOPE PROCEDURE    LOAD_FROM_TAB   LOAD_FROM_TAB        PUBLIC              9 
 
 ### [View PLSCOPE\_COL\_USAGE](utils/view/plscope_col_usage.sql)
 
-This view reports column usages. It is based on the views ```plscope_identifiers```, ```plscope_tab_usage```, ```dba_synonyms```, ```dba_objects``` and ```dba_tab_columns```.
+This view reports column usages. It is based on the views ```PLSCOPE_IDENTIFIERS```, ```PLSCOPE_TAB_USAGE```, ```DBA_SYNONYMS```, ```DBA_OBJECTS```, and ```DBA_TAB_COLUMNS```.
 
 Column-less table/view/synonym accesses are resolved, and reported with a ```NO``` in the ```direct_dependency``` column.
 
@@ -362,7 +362,7 @@ PLSCOPE PROCEDURE    LOAD_FROM_TAB   LOAD_FROM_TAB        PUBLIC             13 
     
 ### [View PLSCOPE\_NAMING](database/utils/view/plscope_naming.sql)
 
-This view checks if PL/SQL identifier names comply to the [Trivadis PL/SQL & SQL Coding Guidelines Version 3.2](https://www.salvis.com/download/guidelines/PLSQL_and_SQL_Coding_Guidelines_3_2.pdf). This view provides chosen columns from ```dba_identifiers``` plus the following:
+This view checks if PL/SQL identifier names comply to the [Trivadis PL/SQL & SQL Coding Guidelines Version 3.2](https://www.salvis.com/download/guidelines/PLSQL_and_SQL_Coding_Guidelines_3_2.pdf). This view provides chosen columns from ```DBA_IDENTIFIERS``` plus the following:
 
 Column Name           | Description
 --------------------- | -------------
@@ -499,13 +499,13 @@ exec plscope_context.remove_all;
 
 **_Experimental_**
 
-This view reports the [where-lineage](http://ilpubs.stanford.edu:8090/918/1/lin_final.pdf) of insert statements. It is based on the ```plscope_identifiers``` view, and the PL/SQL ```lineage_util``` package. Behind the scenes insert statements are processed using the ```parsequery``` procedure in the undocumented ```sys.utl_xml``` PL/SQL package. This procedures supports select statements quite well including Oracle 12.2 grammar enhancements. However, it does not support PL/SQL at all, not even as part of the WITH clause. Hence, not all select statements produce a parse-tree. Furthermore other statements such as insert, update, delete and merge produce incomplete parse-trees, which is somehow expected for a procedure called ```ParseQuery```. However, they are still useful to e.g. identify the target tables of an insert statement.
+This view reports the [where-lineage](http://ilpubs.stanford.edu:8090/918/1/lin_final.pdf) of INSERT statements. It is based on the ```PLSCOPE_IDENTIFIERS``` view, and the PL/SQL ```LINEAGE_UTIL``` package. Behind the scenes INSERT statements are processed using the ```PARSEQUERY``` procedure in the undocumented ```SYS.UTL_XML``` PL/SQL package. This procedures supports SELECT statements quite well including Oracle 12.2 grammar enhancements. However, it does not support PL/SQL at all, not even as part of the WITH clause. Hence, not all SELECT statements produce a parse-tree. Furthermore other statements such as INSERT, UPDATE, DELETE and MERGE produce incomplete parse-trees, which is somehow expected for a procedure called ```ParseQuery```. However, they are still useful to e.g. identify the target tables of an INSERT statement.
 
 Even if this view produces quite good results on wide range of `INSERT ... SELECT` statements, it is considered experimental. To produce reliable, more complete results a PL/SQL and SQL parser is required.
 
 Nonetheless this view shows the power of PL/Scope and its related database features.
 
-The example below shows that the ```salary``` column in the table ```deptsal``` is based on the columns ```sal``` and ```comm``` of the table ```emp```. Similar as in the view ```plscope_col_usage``` synonyms and view columns are resolved recursively. You may control the behaviour in the view by calling the ```lineage_util.set_recursive``` procedure before executing the query.
+The example below shows that the ```salary``` column in the table ```DEPTSAL``` is based on the columns ```sal``` and ```comm``` of the table ```EMP```. Similar as in the view ```PLSCOPE_COL_USAGE``` synonyms and view columns are resolved recursively. You may control the behaviour in the view by calling the ```LINEAGE_UTIL.SET_RECURSIVE``` procedure before executing the query.
 
 #### Query
 
