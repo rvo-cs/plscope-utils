@@ -208,7 +208,7 @@ select procedure_name,
  where object_name = 'LOAD_FROM_TAB'
  order by line, col;
 ```
-#### Result
+#### Results
 
 ```
 PROCEDURE_NAME   LINE  COL NAME_USAGE                                    NAME           TYPE       USAGE        REF_OWNER  REF_OBJECT_TYPE REF_OBJECT_NAME TEXT                                                              NAME_PATH                                                 PATH_LEN PARENT_STATEMENT_TYPE PARENT_STATEMENT_SIGNATURE       SIGNATURE                          USAGE_ID USAGE_CONTEXT_ID IS_FIXED_CONTEXT_ID
@@ -251,7 +251,7 @@ select line, col, type, sql_id, is_duplicate, full_text
  where object_name = 'LOAD_FROM_TAB'
  order by owner, object_type, object_name, line, col;
 ```
-#### Result
+#### Results
 
 ```
 LINE  COL TYPE      SQL_ID        IS_DUPLICATE FULL_TEXT                                       
@@ -283,7 +283,7 @@ select *
  order by owner, object_type, object_name, line, col, direct_dependency;
 ```
 
-#### Result
+#### Results
 
 ```
 OWNER   OBJECT_TYPE  OBJECT_NAME     PROCEDURE_NAME       PROCEDURE_SCOPE  LINE  COL OPERATION  REF_OWNER  REF_OBJECT_TYPE REF_OBJECT_NAME DIRECT_DEPENDENCY TEXT                                                                        IS_BASE_OBJECT   PATH_LEN   USAGE_ID SIGNATURE                        PROCEDURE_SIGNATURE             
@@ -317,7 +317,7 @@ select *
  where procedure_name in ('LOAD_FROM_TAB', 'LOAD_FROM_SYN_WILD')
  order by owner, object_type, object_name, line, col, direct_dependency;
 ```
-#### Result
+#### Results
 
 ```
 OWNER   OBJECT_TYPE  OBJECT_NAME     PROCEDURE_NAME       PROCEDURE_SCOPE  LINE  COL OPERATION  REF_OWNER  REF_OBJECT_TYPE REF_OBJECT_NAME COLUMN_NAME  DIRECT_DEPENDENCY TEXT                                                                               USAGE_ID SIGNATURE                        PROCEDURE_SIGNATURE             
@@ -499,7 +499,7 @@ exec plscope_context.remove_all;
 
 **_Experimental_**
 
-This view reports the [where-lineage](http://ilpubs.stanford.edu:8090/918/1/lin_final.pdf) of INSERT statements. It is based on the ```PLSCOPE_IDENTIFIERS``` view, and the PL/SQL ```LINEAGE_UTIL``` package. Behind the scenes INSERT statements are processed using the ```PARSEQUERY``` procedure in the undocumented ```SYS.UTL_XML``` PL/SQL package. This procedures supports SELECT statements quite well including Oracle 12.2 grammar enhancements. However, it does not support PL/SQL at all, not even as part of the WITH clause. Hence, not all SELECT statements produce a parse-tree. Furthermore other statements such as INSERT, UPDATE, DELETE and MERGE produce incomplete parse-trees, which is somehow expected for a procedure called ```ParseQuery```. However, they are still useful to e.g. identify the target tables of an INSERT statement.
+This view reports the [where-lineage](http://ilpubs.stanford.edu:8090/918/1/lin_final.pdf) of INSERT statements. It is based on the ```PLSCOPE_IDENTIFIERS``` view, and the PL/SQL ```LINEAGE_UTIL``` package. Behind the scenes INSERT statements are processed using the ```PARSEQUERY``` procedure from the undocumented ```SYS.UTL_XML``` PL/SQL package. This procedures supports SELECT statements quite well including Oracle 12.2 grammar enhancements. However, it does not support PL/SQL at all, not even as part of the WITH clause. Hence, not all SELECT statements produce a parse-tree. Furthermore other statements such as INSERT, UPDATE, DELETE, and MERGE produce incomplete parse-trees, which is somehow expected for a procedure called ```ParseQuery```. However, they are still useful to e.g. identify the target tables of an INSERT statement.
 
 Even if this view produces quite good results on wide range of `INSERT ... SELECT` statements, it is considered experimental. To produce reliable, more complete results a PL/SQL and SQL parser is required.
 
