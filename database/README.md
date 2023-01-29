@@ -16,6 +16,7 @@ This component of plscope-utils provides relational views and PL/SQL packages ba
     * [View PLSCOPE\_COL\_USAGE](#view-plscope_col_usage)
     * [View PLSCOPE\_NAMING](#view-plscope_naming)
     * [View PLSCOPE\_INS\_LINEAGE](#view-plscope_ins_lineage)
+* [Security Information](#security-information) 
 * [License](#license) 
 
 ## Prerequisites
@@ -25,9 +26,9 @@ This component of plscope-utils provides relational views and PL/SQL packages ba
 
 ## Installation
 
-1. Clone or download this repository. Extract the downloaded zip file, if you have chosen the download option.
+1. Clone or download this repository; expand the downloaded zip file, if you have chosen the download option.
 
-2. Open a terminal window and change to the directory containing this README.md file
+2. Open a terminal window, and change to the directory containing this README.md file
 
     ```
     cd /path_to/plscope-utils/database
@@ -49,6 +50,7 @@ This component of plscope-utils provides relational views and PL/SQL packages ba
         @utils/user/plscope.sql
         exit
         ```
+        Remark: for details about privileges and roles granted to the plscope-utils owner account, please see the [Security Information](#security-information) section. 
 
 4. Install plscope-utils objects
 
@@ -64,6 +66,36 @@ This component of plscope-utils provides relational views and PL/SQL packages ba
         @install.sql
         exit
         ```
+
+Remark: public synonyms will be created (or replaced) for plscope-utils core views, and helper PL/SQL packages.
+
+<details><summary>List of public synonyms—click to expand</summary>
+<p/>
+   
+```sql
+select owner, synonym_name, table_owner, table_name
+  from dba_synonyms
+ where owner = 'PUBLIC'
+   and table_owner = 'PLSCOPE'
+ order by table_owner, table_name;
+```
+```
+OWNER     SYNONYM_NAME           TABLE_OWNER    TABLE_NAME
+--------- ---------------------- -------------- ----------------------
+PUBLIC    DD_UTIL                PLSCOPE        DD_UTIL                
+PUBLIC    LINEAGE_UTIL           PLSCOPE        LINEAGE_UTIL           
+PUBLIC    PARSE_UTIL             PLSCOPE        PARSE_UTIL             
+PUBLIC    PLSCOPE_COL_USAGE      PLSCOPE        PLSCOPE_COL_USAGE      
+PUBLIC    PLSCOPE_CONTEXT        PLSCOPE        PLSCOPE_CONTEXT        
+PUBLIC    PLSCOPE_IDENTIFIERS    PLSCOPE        PLSCOPE_IDENTIFIERS    
+PUBLIC    PLSCOPE_INS_LINEAGE    PLSCOPE        PLSCOPE_INS_LINEAGE    
+PUBLIC    PLSCOPE_NAMING         PLSCOPE        PLSCOPE_NAMING         
+PUBLIC    PLSCOPE_STATEMENTS     PLSCOPE        PLSCOPE_STATEMENTS     
+PUBLIC    PLSCOPE_TAB_USAGE      PLSCOPE        PLSCOPE_TAB_USAGE      
+PUBLIC    TYPE_UTIL              PLSCOPE        TYPE_UTIL              
+```
+
+</details>
 
 ## Usage
 
@@ -107,7 +139,7 @@ OWNER | ```USER``` | ```owner LIKE nvl(sys_context('PLSCOPE', 'OWNER'), USER)```
 OBJECT_TYPE | ```%``` | ```object_type LIKE nvl(sys_context('PLSCOPE', 'OBJECT_TYPE'), '%')```
 OBJECT_NAME | ```%``` | ```object_name LIKE nvl(sys_context('PLSCOPE', 'OBJECT_NAME'), '%')```
 
-The filter is applied in the views as early as possible to improve runtime performance. You may set the ```OWNER``` attribute to ```%``` and filter the owner in the where clause, e.g. to analyse several schemas in one go. 
+These filters are applied as early as possible in the views, to improve runtime performance. You may set the ```OWNER``` attribute to ```%``` and filter the owner in the where clause, e.g. to analyse several schemas in one go. 
 
 Here's an example to set the context to a chosen PL/SQL package of the [Alexandria PL/SQL Utility Library](https://github.com/mortenbra/alexandria-plsql-utils):
 
@@ -119,22 +151,36 @@ exec plscope_context.set_attr('OBJECT_NAME', 'APEX_UTIL_PKG');
 
 ### [View PLSCOPE\_IDENTIFIERS](utils/view/plscope_identifiers.sql)
 
-This view combines the ```dba_identifiers```, ```dba_statements``` and ```dba_source``` views. It provides all columns from ```dba_identifiers``` plus the following:
+This view combines the ```dba_identifiers```, ```dba_statements``` and ```dba_source``` views. It provides all columns from ```dba_identifiers``` [^1] plus the following:
 
 Column Name           | Description
 --------------------- | -------------
-```procedure_name```  | Name of the function/procedure in a PL/SQL package (same as ```object_name``` for standalone procedures and functions)
-```procedure_scope```| ```PRIVATE``` or ```PUBLIC``` scope of a function/procedure in a PL/SQL package, children inherit the procedure scope.
-```name_path```       | Context of the identifier represented as path
+```procedure_name```  | Name of the top-level function/procedure in a PL/SQL package or type; same as ```object_name``` for standalone procedures and functions
+```procedure_scope``` | ```PRIVATE``` or ```PUBLIC``` scope of a function/procedure in a PL/SQL package or type; children inherit the procedure scope.
+```name_usage```      | Name of the identifier, along with its type and usage, as a single column; the value is indented according to context, in order to represent the hierarchy of contexts/usages of identifiers
+```name_path```       | Path formed by identifiers in the hierarchy, from the root identifier down to and including the present identifier
 ```path_len```        | Hierarchy level of the identifier (number of forward slashes in ```name_path```)
-```ref_owner```       | ```owner``` of the object referenced by the ```signature``` column
-```ref_object_type``` | ```object_type``` of the object referenced by the ```signature``` column
-```ref_object_name``` | ```object_name``` of the object referenced by the ```signature``` column
-```text``` | ```text``` of the referenced source code line
-```parent_statement_type``` | ```type``` of the parent statement (```NULL``` if parent is not a SQL statement)
-```parent_statement_signature``` | ```signature``` of the parent statement (```NULL``` if parent is not a SQL statement)
-```parent_statement_path_len``` | ```path_len``` of the parent statement (```NULL``` if parent is not a SQL statement)
-```is_used``` | ```YES``` if a declared identifier has been referenced, otherwise ```NO```. ```NULL``` when ```is_used``` is not applicable for an identifier (e.g. SQL statements).
+```module_name```     | In a procedure or function _definition_, the name of the present procedure or function, along with (if any) the names of all its parent procedures/functions down from the top-level routine, separated by dot (.) characters  
+```ref_owner```       | ```owner``` of the object in which the referenced identifier is declared
+```ref_object_type``` | ```object_type``` of the object in which the referenced identifier is declared
+```ref_object_name``` | ```object_name``` of the object in which the referenced identifier is declared
+```text``` | ```text``` of the source code line where this identifier's usage is located  
+```parent_statement_type``` | ```type``` of the parent statement (```NULL``` if the parent is not a SQL statement)
+```parent_statement_signature``` | ```signature``` of the parent statement (```NULL``` if the parent is not a SQL statement)
+```parent_statement_path_len``` | ```path_len``` of the parent statement (```NULL``` if the parent is not a SQL statement)
+```is_used``` | Applies only to locally-declared identifiers (except labels) in stand-alone procedures/functions, package bodies, or type bodies; always ```NULL``` otherwise [^2] . The value is ```YES``` if the identifier is referenced locally, ```NO``` if it is only declared, but not referenced [^3] ; ```NULL``` if not applicable
+```is_fixed_context_id``` | ```YES``` if the ```usage_context_id``` column has been "cooked", in order to fix a gap in the context hierarchy caused by one or more missing identifiers [^4] ; ```NULL``` otherwise
+```procedure_signature```  | Signature of the top-level function/procedure in a PL/SQL package or type; see ```procedure_name```, ```procedure_scope```
+```proc_ends_before_line```<br/>```proc_ends_before_col```| These 2 columns provide with an upper bound for the position in the source code where the current top-level procedure/function ends: the last token in that routine is _strictly_ before that position
+```ref_line```<br/>```ref_col``` | Position (line, column) where the referenced identifier is declared, in the object (with owner ```ref_owner```, and name ```ref_object_name```) in which it is declared
+
+[^1]: Some newer columns, added to the ```dba_identifiers``` view in releases 18.1 and 19.1, are not yet available in the ```plscope_identifiers``` view.  
+
+[^2]: In particular, ```plscope_identifiers.is_used``` is always ```NULL``` for public declarations in package or type specifications.
+
+[^3]: Basically, the aim is that such unused identifiers could be removed, in principle.
+
+[^4]: See Philipp Salvisberg's blog, 2017-10-14: [Limitations of PL/Scope and How to Deal with Them](https://www.salvis.com/blog/2017/10/14/limitations-of-plscope-and-how-to-deal-with-them/), section 2. Broken Usage Hierarchy.
 
 #### Query
 
@@ -193,9 +239,9 @@ LOAD_FROM_TAB      14    4     COMMIT statement                          COMMIT 
 
 ### [View PLSCOPE\_STATEMENTS](utils/view/plscope_statements.sql)
 
-This view is based on the ```dba_statements``` view and adds a ```is_duplicate``` column.
+This view is based on the ```dba_statements``` view, and adds the ```is_duplicate``` column.
 
-The [etl](demo/package/etl.pkb) package body contains various variants to load the ```deptsal``` target table. And the reported duplicate insert statement is used there as well.
+The [ETL](demo/package/etl.pkb) package body contains various variants to load the ```deptsal``` target table. And the reported duplicate insert statement is used there as well.
 
 #### Query
 
@@ -222,7 +268,11 @@ LINE  COL TYPE      SQL_ID        IS_DUPLICATE FULL_TEXT
 
 ### [View PLSCOPE\_TAB\_USAGE](utils/view/plscope_tab_usage.sql)
 
-This view reports table usages. It is based on the views ```dba_tables```, ```dba_dependencies``` and ```plscope_identifiers```. Usages of synonyms and views are resolved and reporteded with a ```NO``` in the column ```DIRECT_DEPENDENCY```.
+This view reports table usages. It is based on the views ```dba_tables```, ```dba_dependencies``` and ```plscope_identifiers```.
+
+Targets of synonyms, and views' underlying tables or views, are resolved, and reported with a ```NO``` in the ```direct_dependency``` column.
+
+The ```is_base_object``` column is ```YES``` if the referenced table/view is the first object, when resolving synonyms, which is not itself a synonym; otherwise that column is ```NULL```.
 
 #### Query
 
@@ -255,7 +305,9 @@ PLSCOPE PROCEDURE    LOAD_FROM_TAB   LOAD_FROM_TAB        PUBLIC              9 
 
 ### [View PLSCOPE\_COL\_USAGE](utils/view/plscope_col_usage.sql)
 
-This view reports column usages. It is based on the views ```plscope_identifiers```, ```plscope_tab_usage```, ```dba_synonyms```, ```dba_objects``` and ```dba_tab_columns```. Column-less table/view/synonym accesses are resolved and reporteded with a ```NO``` in the column ```DIRECT_DEPENDENCY```.
+This view reports column usages. It is based on the views ```plscope_identifiers```, ```plscope_tab_usage```, ```dba_synonyms```, ```dba_objects``` and ```dba_tab_columns```.
+
+Column-less table/view/synonym accesses are resolved, and reported with a ```NO``` in the ```direct_dependency``` column.
 
 #### Query
 
@@ -318,7 +370,7 @@ Column Name           | Description
 ```message```  | Result of the check. Error message or ```OK``` if check was successful.
 ```text``` | ```text``` of the referenced source code line
 
-A prefix or suffix is defined for every group of identifiers listed in the table below. By default these naming conventions are applied. However, it is possible to override the default behaviour via session context variables.
+A prefix or suffix (or both) is defined for every group of identifiers in the following table. By default these naming conventions are applied. However, it is possible to override the default convention via session context variables.
 
 Identifier Group | (P)refix / (S)uffix | Example | Session Context Attribute | Default Regular Expression 
 -----------|---------------------|---------| -------------- | -----
@@ -342,7 +394,7 @@ Subtype | S: type | ```big_string_type``` | ```SUBTYPE_REGEX``` | ```.*_type$```
 
 #### Example PL/SQL Package
 
-The identfiers in tis PL/SQL package are used to demonstrate the functionality of the view.
+The following PL/SQL package is used to demonstrate the functionality of the view.
 
 ```sql
 create or replace package pkg is
@@ -376,7 +428,7 @@ end pkg;
 
 #### Query
 
-Use the following query to check results of package created above.
+Use the following query to check the example package.
 
 ```sql
 select object_type, procedure_name, type, name, message, line, col, text
@@ -385,9 +437,9 @@ select object_type, procedure_name, type, name, message, line, col, text
  order by object_type, line, col;
 ```
 
-If you are interested in naming convention violations only extend the where clause by ```AND message != 'OK'```.
+If you want to return only naming convention violations, extend the WHERE clause by: ```and message != 'OK'```.
 
-#### Result Using Default Naming Conventions
+#### Results Using Default Naming Conventions
 
 ```
 OBJECT_TYPE  PRO TYPE       NAME               MESSAGE                                       LINE  COL TEXT                                                     
@@ -418,7 +470,7 @@ end;
 /
 ```
 
-#### Result after Changing Naming Conventions
+#### Results after Changing Naming Conventions
 
 ```
 OBJECT_TYPE  PRO TYPE       NAME               MESSAGE                                       LINE  COL TEXT                                                     
@@ -447,7 +499,7 @@ exec plscope_context.remove_all;
 
 **_Experimental_**
 
-This view reports the [where-lineage](http://ilpubs.stanford.edu:8090/918/1/lin_final.pdf) of insert statements. It is based on the view ```plscope_identifiers``` and the PL/SQL package ```lineage_util```. Behind the scenes insert statements are processed using the undocumented PL/SQL package procedure ```sys.utl_xml.parsequery```. This procedures supports select statements quite well including Oracle 12.2 grammar enhancements. However, it does not support PL/SQL at all, not even as part of the with_clause. Hence, not all select statements produce a parse-tree. Furthermore other statements such as insert, update, delete and merge produce incomplete parse-trees, which is somehow expected for a procedure called ```ParseQuery```. However, they are still useful to e.g. identify the target tables of an insert statement.
+This view reports the [where-lineage](http://ilpubs.stanford.edu:8090/918/1/lin_final.pdf) of insert statements. It is based on the ```plscope_identifiers``` view, and the PL/SQL ```lineage_util``` package. Behind the scenes insert statements are processed using the ```parsequery``` procedure in the undocumented ```sys.utl_xml``` PL/SQL package. This procedures supports select statements quite well including Oracle 12.2 grammar enhancements. However, it does not support PL/SQL at all, not even as part of the WITH clause. Hence, not all select statements produce a parse-tree. Furthermore other statements such as insert, update, delete and merge produce incomplete parse-trees, which is somehow expected for a procedure called ```ParseQuery```. However, they are still useful to e.g. identify the target tables of an insert statement.
 
 Even if this view produces quite good results on wide range of `INSERT ... SELECT` statements, it is considered experimental. To produce reliable, more complete results a PL/SQL and SQL parser is required.
 
@@ -475,7 +527,7 @@ select *
        from_column_name;
 ```
 
-#### Result (default)
+#### Results (default)
 
 ```
 OWNER   OBJECT_TYPE  OBJECT_NAME   LINE  COL PROCEDURE_NAME     FROM_OWNER FROM_OBJECT_TYPE FROM_OBJECT_NAME FROM_COLUMN_NAME TO_OWNER TO_OBJECT_TYPE TO_OBJECT_NAME TO_COLUMN_NAME
@@ -499,7 +551,7 @@ PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE
 15 rows selected. 
 ```
 
-#### Result (recursion disabled)
+#### Results (recursion disabled)
 
 Recursive resolution of view columns may be disabled by calling: ```lineage_util.set_recursive(0);```
 ```
@@ -519,6 +571,106 @@ PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE
 
 11 rows selected. 
 ```
+
+## Security Information
+
+This section provides information about roles and privileges pertaining to the ```PLSCOPE``` account, and plscope-utils core database objects.
+
+Remark: sites with security requirements may consider restricting access to the ```PLSCOPE``` account, and grant access to core database objects on a _need-to-know_ basis.
+
+<details><summary>Full details here—click to expand</summary>
+
+#### Section ToC
+   
+* [Roles and Privileges of the ```PLSCOPE``` Account](#roles-and-privileges-of-the-plscope-account)
+    * [Role Grants](#role-grants)
+    * [System Privilege Grants](#system-privilege-grants)
+    * [Object Privilege Grants](#object-privilege-grants)
+    * [Other Privileges](#other-privileges)
+* [Grants on plscope-utils Core Database Objects](#grants-on-plscope-utils-core-database-objects)
+
+### Roles and Privileges of the ```PLSCOPE``` Account
+
+   The ```PLSCOPE``` account is a highly privileged account. 
+
+#### Role Grants
+
+Grantee            | Granted Role                  | Default Role? | With Admin Option?
+:----------------- | :-----------------------------| :-----------: | :-------:
+```PLSCOPE```      | CONNECT                       | Yes           | No
+```PLSCOPE```      | RESOURCE                      | Yes           | No
+```PLSCOPE```      | SELECT_CATALOG_ROLE           | Yes           | No
+
+#### System Privilege Grants
+
+Grantee            | Privilege                     | With Admin Option?
+:----------------- | :---------------------------- | :-------:
+```PLSCOPE```      | CREATE ANY CONTEXT            | No
+```PLSCOPE```      | CREATE MATERIALIZED VIEW      | No
+```PLSCOPE```      | CREATE PUBLIC SYNONYM         | No
+```PLSCOPE```      | CREATE SYNONYM                | No
+```PLSCOPE```      | CREATE TABLE                  | No
+```PLSCOPE```      | CREATE VIEW                   | No
+```PLSCOPE```      | DEBUG ANY PROCEDURE           | No
+```PLSCOPE```      | DEBUG CONNECT SESSION         | No
+```PLSCOPE```      | DROP ANY CONTEXT              | No
+```PLSCOPE```      | DROP PUBLIC SYNONYM           | No
+```PLSCOPE```      | SELECT ANY DICTIONARY         | No
+```PLSCOPE```      | UNLIMITED TABLESPACE          | No
+
+#### Object Privilege Grants
+
+Grantee            | Object Privilege   | Object Owner   | Object Name             | Object Type  | Grantable?
+:----------------- | :----------------- | :------------- | :---------------------- | :----------- | :----------- 
+```PLSCOPE```      | EXECUTE            | ```SYS```      | ```UTL_XML_LIB```       | Library      | No
+```PLSCOPE```      | EXECUTE            | ```SYS```      | ```DBMS_DEBUG_JDWP```   | Package      | No
+```PLSCOPE```      | EXECUTE            | ```SYS```      | ```UTL_XML```           | Package      | No
+```PLSCOPE```      | SELECT             | ```SYS```      | ```DBA_DEPENDENCIES```  | View         | Yes
+```PLSCOPE```      | SELECT             | ```SYS```      | ```DBA_IDENTIFIERS```   | View         | Yes
+```PLSCOPE```      | SELECT             | ```SYS```      | ```DBA_MVIEWS```        | View         | Yes
+```PLSCOPE```      | SELECT             | ```SYS```      | ```DBA_OBJECTS```       | View         | Yes
+```PLSCOPE```      | SELECT             | ```SYS```      | ```DBA_SOURCE```        | View         | Yes
+```PLSCOPE```      | SELECT             | ```SYS```      | ```DBA_STATEMENTS```    | View         | Yes
+```PLSCOPE```      | SELECT             | ```SYS```      | ```DBA_SYNONYMS```      | View         | Yes
+```PLSCOPE```      | SELECT             | ```SYS```      | ```DBA_TABLES```        | View         | Yes
+```PLSCOPE```      | SELECT             | ```SYS```      | ```DBA_TAB_COLUMNS```   | View         | Yes
+```PLSCOPE```      | SELECT             | ```SYS```      | ```DBA_VIEWS```         | View         | Yes
+```PLSCOPE```      | SELECT             | ```SYS```      | ```V_$MYSTAT```         | View         | No
+
+#### Other Privileges
+   
+The following Host Access Control Entry is added:
+```sql
+select host, privilege, grant_type,
+       principal, principal_type, inverted_principal
+  from dba_host_aces
+ where principal = 'PLSCOPE';
+```
+```
+HOST   PRIVILEGE    GRANT_TYPE   PRINCIPAL    PRINCIPAL_TYPE  INVERTED_PRINCIPAL    
+------ ------------ ------------ ------------ --------------- ------------------ 
+*      JDWP         GRANT        PLSCOPE      DATABASE        NO                    
+```
+   
+### Grants on plscope-utils Core Database Objects
+
+Privileges on plscope-utils core database objects are granted to ```PUBLIC```.
+   
+Grantee	          | Object Privilege	 | Object Owner	| Object Type	 | Object Name	              | Grantable?
+:----------------- | :----------------- | :------------- | :------------ | :------------------------ | :--------:
+```PUBLIC```	    | EXECUTE	          | ```PLSCOPE```	| Package	    | ```DD_UTIL```	           | No
+```PUBLIC```	    | EXECUTE	          | ```PLSCOPE```	| Package	    | ```LINEAGE_UTIL```        | No
+```PUBLIC```	    | EXECUTE	          | ```PLSCOPE```	| Package	    | ```PARSE_UTIL```	        | No
+```PUBLIC```	    | EXECUTE	          | ```PLSCOPE```	| Package	    | ```PLSCOPE_CONTEXT```     | No
+```PUBLIC```	    | EXECUTE	          | ```PLSCOPE```	| Package	    | ```TYPE_UTIL```           | No
+```PUBLIC```	    | SELECT	          | ```PLSCOPE```	| View	       | ```PLSCOPE_COL_USAGE```	  | No
+```PUBLIC```	    | SELECT	          | ```PLSCOPE```	| View	       | ```PLSCOPE_IDENTIFIERS``` | No
+```PUBLIC```	    | SELECT	          | ```PLSCOPE```	| View	       | ```PLSCOPE_INS_LINEAGE``` | No
+```PUBLIC```	    | SELECT	          | ```PLSCOPE```	| View	       | ```PLSCOPE_NAMING```	     | No
+```PUBLIC```	    | SELECT	          | ```PLSCOPE```	| View	       | ```PLSCOPE_STATEMENTS```  | No
+```PUBLIC```	    | SELECT	          | ```PLSCOPE```	| View	       | ```PLSCOPE_TAB_USAGE```	  | No
+   
+</details>
 
 ## License
 
