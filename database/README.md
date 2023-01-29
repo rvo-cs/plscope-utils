@@ -370,7 +370,7 @@ Column Name           | Description
 ```message```  | Result of the check. Error message or ```OK``` if check was successful.
 ```text``` | ```text``` of the referenced source code line
 
-A prefix or suffix is defined for every group of identifiers listed in the table below. By default these naming conventions are applied. However, it is possible to override the default behaviour via session context variables.
+A prefix or suffix (or both) is defined for every group of identifiers in the following table. By default these naming conventions are applied. However, it is possible to override the default convention via session context variables.
 
 Identifier Group | (P)refix / (S)uffix | Example | Session Context Attribute | Default Regular Expression 
 -----------|---------------------|---------| -------------- | -----
@@ -394,7 +394,7 @@ Subtype | S: type | ```big_string_type``` | ```SUBTYPE_REGEX``` | ```.*_type$```
 
 #### Example PL/SQL Package
 
-The identfiers in tis PL/SQL package are used to demonstrate the functionality of the view.
+The following PL/SQL package is used to demonstrate the functionality of the view.
 
 ```sql
 create or replace package pkg is
@@ -428,7 +428,7 @@ end pkg;
 
 #### Query
 
-Use the following query to check results of package created above.
+Use the following query to check the example package.
 
 ```sql
 select object_type, procedure_name, type, name, message, line, col, text
@@ -437,9 +437,9 @@ select object_type, procedure_name, type, name, message, line, col, text
  order by object_type, line, col;
 ```
 
-If you are interested in naming convention violations only extend the where clause by ```AND message != 'OK'```.
+If you want to return only naming convention violations, extend the WHERE clause by: ```and message != 'OK'```.
 
-#### Result Using Default Naming Conventions
+#### Results Using Default Naming Conventions
 
 ```
 OBJECT_TYPE  PRO TYPE       NAME               MESSAGE                                       LINE  COL TEXT                                                     
@@ -470,7 +470,7 @@ end;
 /
 ```
 
-#### Result after Changing Naming Conventions
+#### Results after Changing Naming Conventions
 
 ```
 OBJECT_TYPE  PRO TYPE       NAME               MESSAGE                                       LINE  COL TEXT                                                     
@@ -499,7 +499,7 @@ exec plscope_context.remove_all;
 
 **_Experimental_**
 
-This view reports the [where-lineage](http://ilpubs.stanford.edu:8090/918/1/lin_final.pdf) of insert statements. It is based on the view ```plscope_identifiers``` and the PL/SQL package ```lineage_util```. Behind the scenes insert statements are processed using the undocumented PL/SQL package procedure ```sys.utl_xml.parsequery```. This procedures supports select statements quite well including Oracle 12.2 grammar enhancements. However, it does not support PL/SQL at all, not even as part of the with_clause. Hence, not all select statements produce a parse-tree. Furthermore other statements such as insert, update, delete and merge produce incomplete parse-trees, which is somehow expected for a procedure called ```ParseQuery```. However, they are still useful to e.g. identify the target tables of an insert statement.
+This view reports the [where-lineage](http://ilpubs.stanford.edu:8090/918/1/lin_final.pdf) of insert statements. It is based on the ```plscope_identifiers``` view, and the PL/SQL ```lineage_util``` package. Behind the scenes insert statements are processed using the ```parsequery``` procedure in the undocumented ```sys.utl_xml``` PL/SQL package. This procedures supports select statements quite well including Oracle 12.2 grammar enhancements. However, it does not support PL/SQL at all, not even as part of the WITH clause. Hence, not all select statements produce a parse-tree. Furthermore other statements such as insert, update, delete and merge produce incomplete parse-trees, which is somehow expected for a procedure called ```ParseQuery```. However, they are still useful to e.g. identify the target tables of an insert statement.
 
 Even if this view produces quite good results on wide range of `INSERT ... SELECT` statements, it is considered experimental. To produce reliable, more complete results a PL/SQL and SQL parser is required.
 
@@ -527,7 +527,7 @@ select *
        from_column_name;
 ```
 
-#### Result (default)
+#### Results (default)
 
 ```
 OWNER   OBJECT_TYPE  OBJECT_NAME   LINE  COL PROCEDURE_NAME     FROM_OWNER FROM_OBJECT_TYPE FROM_OBJECT_NAME FROM_COLUMN_NAME TO_OWNER TO_OBJECT_TYPE TO_OBJECT_NAME TO_COLUMN_NAME
@@ -551,7 +551,7 @@ PLSCOPE PROCEDURE    LOAD_FROM_TAB    3    4 LOAD_FROM_TAB      PLSCOPE    TABLE
 15 rows selected. 
 ```
 
-#### Result (recursion disabled)
+#### Results (recursion disabled)
 
 Recursive resolution of view columns may be disabled by calling: ```lineage_util.set_recursive(0);```
 ```
